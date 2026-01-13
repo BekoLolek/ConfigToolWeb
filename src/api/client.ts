@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '' });
+const baseURL = import.meta.env.VITE_API_URL;
+if (!baseURL) {
+  console.error('[API] VITE_API_URL environment variable is not set. API calls will fail.');
+}
+export const api = axios.create({ baseURL });
 api.interceptors.request.use(c => { const t = useAuthStore.getState().accessToken; if (t) c.headers.Authorization = `Bearer ${t}`; return c; });
 api.interceptors.response.use(r => r, async e => {
   const req = e.config; if (e.response?.status === 401 && !req._retry) { req._retry = true;
