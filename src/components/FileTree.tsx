@@ -1,43 +1,94 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FileInfo } from '../types';
 
-interface Props { files: FileInfo[]; selectedFile: string | null; onSelect: (path: string) => void; }
+interface Props {
+  serverId: string;
+  fileCache: Map<string, FileInfo[]>;
+  loadingDirs: Set<string>;
+  loadDirectory: (dir: string) => Promise<FileInfo[]>;
+  selectedFile: string | null;
+  onSelect: (path: string) => void;
+}
 
-export default function FileTree({ files, selectedFile, onSelect }: Props) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(['plugins/']));
+export default function FileTree({ serverId, fileCache, loadingDirs, loadDirectory, selectedFile, onSelect }: Props) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const toggle = (path: string) => setExpanded(prev => { const n = new Set(prev); n.has(path) ? n.delete(path) : n.add(path); return n; });
+  // Load root directory on mount
+  useEffect(() => { loadDirectory('plugins/'); }, [serverId]);
 
-  const tree = new Map<string, FileInfo[]>();
-  files.forEach(f => { const p = f.path.split('/').slice(0, -1).join('/') + '/'; if (!tree.has(p)) tree.set(p, []); tree.get(p)!.push(f); });
-
-  const render = (file: FileInfo, depth = 0): JSX.Element => {
-    const editable = /\.(ya?ml|json)$/i.test(file.name);
-    if (file.isDirectory) {
-      const open = expanded.has(file.path);
-      const children = tree.get(file.path) || [];
-      return (
-        <div key={file.path}>
-          <button onClick={() => toggle(file.path)} className="w-full flex items-center gap-2 px-2 py-1 text-left text-gray-300 hover:bg-gray-700 rounded" style={{ paddingLeft: depth * 12 + 8 }}>
-            <span className={`text-xs transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
-            <span className="text-yellow-500">📁</span>
-            <span className="truncate text-sm">{file.name}</span>
-          </button>
-          {open && children.sort((a, b) => a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1).map(c => render(c, depth + 1))}
-        </div>
-      );
+  const toggle = async (path: string) => {
+    const isExpanded = expanded.has(path);
+    if (!isExpanded) {
+      // Load directory contents when expanding
+      await loadDirectory(path);
     }
+    setExpanded(prev => {
+      const n = new Set(prev);
+      isExpanded ? n.delete(path) : n.add(path);
+      return n;
+    });
+  };
+
+  const renderFile = (file: FileInfo, depth: number): JSX.Element => {
+    const editable = /\.(ya?ml|json)$/i.test(file.name);
     return (
-      <button key={file.path} onClick={() => editable && onSelect(file.path)} disabled={!editable}
+      <button
+        key={file.path}
+        onClick={() => editable && onSelect(file.path)}
+        disabled={!editable}
         className={`w-full flex items-center gap-2 px-2 py-1 text-left rounded ${selectedFile === file.path ? 'bg-blue-600/30 text-blue-300' : editable ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
-        style={{ paddingLeft: depth * 12 + 28 }}>
+        style={{ paddingLeft: depth * 16 + 8 }}
+      >
         <span className="text-sm">📄</span>
         <span className="truncate text-sm">{file.name}</span>
       </button>
     );
   };
 
-  if (files.length === 0) return <div className="p-4 text-sm text-gray-500 text-center">No files</div>;
-  const root = tree.get('plugins/') || files.filter(f => f.path.split('/').length === 2);
-  return <div className="p-2">{root.sort((a, b) => a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1).map(f => render(f))}</div>;
+  const renderDir = (file: FileInfo, depth: number): JSX.Element => {
+    const isOpen = expanded.has(file.path);
+    const isLoading = loadingDirs.has(file.path);
+    const children = fileCache.get(file.path) || [];
+
+    return (
+      <div key={file.path}>
+        <button
+          onClick={() => toggle(file.path)}
+          className="w-full flex items-center gap-2 px-2 py-1 text-left text-gray-300 hover:bg-gray-700 rounded"
+          style={{ paddingLeft: depth * 16 + 8 }}
+        >
+          <span className={`text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+          <span className="text-yellow-500">📁</span>
+          <span className="truncate text-sm">{file.name}</span>
+          {isLoading && <span className="text-xs text-gray-500 ml-auto">...</span>}
+        </button>
+        {isOpen && (
+          <div>
+            {children
+              .sort((a, b) => a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1)
+              .map(c => c.isDirectory ? renderDir(c, depth + 1) : renderFile(c, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const rootFiles = fileCache.get('plugins/') || [];
+  const isRootLoading = loadingDirs.has('plugins/');
+
+  if (isRootLoading && rootFiles.length === 0) {
+    return <div className="p-4 text-sm text-gray-500 text-center">Loading...</div>;
+  }
+
+  if (rootFiles.length === 0) {
+    return <div className="p-4 text-sm text-gray-500 text-center">No files</div>;
+  }
+
+  return (
+    <div className="p-2">
+      {rootFiles
+        .sort((a, b) => a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1)
+        .map(f => f.isDirectory ? renderDir(f, 0) : renderFile(f, 0))}
+    </div>
+  );
 }

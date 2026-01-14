@@ -8,13 +8,15 @@ import VersionHistory from '../components/VersionHistory';
 
 export default function ServerView() {
   const { serverId } = useParams<{ serverId: string }>();
-  const { currentServer, files, fetchServer, fetchFiles } = useServerStore();
+  const { currentServer, fileCache, loadingDirs, fetchServer, loadDirectory, clearFileCache } = useServerStore();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
 
-  useEffect(() => { if (serverId) { fetchServer(serverId); fetchFiles(serverId); } }, [serverId]);
+  useEffect(() => { if (serverId) { fetchServer(serverId); clearFileCache(); } }, [serverId]);
   useWebSocket(serverId);
+
+  const handleLoadDirectory = (dir: string) => loadDirectory(serverId!, dir);
 
   if (!currentServer) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
@@ -36,7 +38,7 @@ export default function ServerView() {
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto">
           <div className="p-3 border-b border-gray-700 text-sm font-medium text-gray-400">Files</div>
-          <FileTree files={files} selectedFile={selectedFile} onSelect={setSelectedFile} />
+          <FileTree serverId={serverId!} fileCache={fileCache} loadingDirs={loadingDirs} loadDirectory={handleLoadDirectory} selectedFile={selectedFile} onSelect={setSelectedFile} />
         </aside>
         <main className="flex-1 flex flex-col overflow-hidden">
           {selectedFile ? <ConfigEditor key={editorKey} serverId={serverId!} filePath={selectedFile} /> : <div className="flex-1 flex items-center justify-center text-gray-500">Select a file</div>}
