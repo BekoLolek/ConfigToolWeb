@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react';
 import TabBar from './TabBar';
 import { useEditorStore, type Tab } from '../stores/editorStore';
 import { fileApi } from '../api/endpoints';
+import clsx from 'clsx';
 
 interface Props {
   paneIndex: 0 | 1;
@@ -106,7 +107,10 @@ export default function EditorPane({ paneIndex }: Props) {
 
   return (
     <div
-      className={`flex-1 flex flex-col min-w-0 ${isActivePane && isSplit ? 'ring-1 ring-blue-500/50' : ''}`}
+      className={clsx(
+        'flex-1 flex flex-col min-w-0 bg-slate-950',
+        isActivePane && isSplit && 'ring-1 ring-cyber-500/30'
+      )}
       onClick={handlePaneClick}
     >
       <TabBar
@@ -121,36 +125,82 @@ export default function EditorPane({ paneIndex }: Props) {
 
       {tab ? (
         <>
-          <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-700">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400 font-mono truncate">{tab.filePath}</span>
-              {hasChanges && <span className="text-yellow-500 text-sm flex-shrink-0">Unsaved</span>}
+          {/* File info bar */}
+          <div className="flex items-center justify-between px-4 py-2 bg-slate-900/50 border-b border-slate-800">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xs font-mono text-slate-500 truncate">{tab.filePath}</span>
+              {hasChanges && (
+                <span className="flex items-center gap-1.5 text-status-warning text-xs font-mono uppercase tracking-wider flex-shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-warning animate-pulse" />
+                  Modified
+                </span>
+              )}
             </div>
             {hasChanges && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={handleDiscard}
-                  className="px-3 py-1 text-sm text-gray-400 hover:text-white"
+                  className="btn btn-ghost text-xs py-1"
                 >
                   Discard
                 </button>
                 <button
                   onClick={() => setShowSave(true)}
                   disabled={saving}
-                  className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded"
+                  className="btn btn-primary text-xs py-1"
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Saving
+                    </span>
+                  ) : 'Save'}
                 </button>
               </div>
             )}
           </div>
+
+          {/* Error message */}
           {error && (
-            <div className="px-4 py-2 bg-red-900/50 text-red-200 text-sm">{error}</div>
+            <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/30 flex items-center gap-2 animate-slide-up">
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="text-red-400 text-sm font-mono">{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-auto text-red-400 hover:text-red-300"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           )}
+
+          {/* Editor content */}
           {tab.isLoading ? (
-            <div className="flex-1 flex items-center justify-center text-gray-500">Loading...</div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center gap-3 text-slate-500">
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="font-mono text-sm uppercase tracking-wider">Loading file...</span>
+              </div>
+            </div>
           ) : tab.error ? (
-            <div className="flex-1 flex items-center justify-center text-red-400">{tab.error}</div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-red-400 font-mono text-sm">{tab.error}</p>
+              </div>
+            </div>
           ) : (
             <div className="flex-1">
               <Editor
@@ -161,56 +211,97 @@ export default function EditorPane({ paneIndex }: Props) {
                 theme="vs-dark"
                 options={{
                   minimap: { enabled: false },
-                  fontSize: 14,
+                  fontSize: 13,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontLigatures: true,
                   wordWrap: 'on',
                   tabSize: 2,
+                  lineNumbers: 'on',
+                  renderLineHighlight: 'line',
+                  scrollBeyondLastLine: false,
+                  padding: { top: 12, bottom: 12 },
+                  cursorBlinking: 'smooth',
+                  smoothScrolling: true,
                 }}
               />
             </div>
           )}
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
-          Select a file to edit
+        <div className="flex-1 flex items-center justify-center bg-slate-950">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center">
+              <svg className="w-8 h-8 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="text-slate-600 font-mono text-sm uppercase tracking-wider">Select a file to edit</p>
+            <p className="text-slate-700 text-xs mt-2">Choose a YAML or JSON file from the file tree</p>
+          </div>
         </div>
       )}
 
       {/* Save Modal */}
       {showSave && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Save Changes</h3>
-            <input
-              type="text"
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              placeholder="Commit message (optional)"
-              className="w-full mb-4 px-3 py-2 bg-gray-700 rounded"
-              autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-            />
-            <label className="flex items-center gap-2 mb-6 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={reload}
-                onChange={e => setReload(e.target.checked)}
-                className="w-4 h-4"
-              />
-              Reload plugin after save
-            </label>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowSave(false)}
-                className="px-4 py-2 text-gray-400 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
-              >
-                Save
-              </button>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="relative w-full max-w-md mx-4 animate-slide-up">
+            {/* Corner accents */}
+            <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />
+            <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-cyber-500" />
+            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-cyber-500" />
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-cyber-500" />
+
+            <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden">
+              {/* Header stripe */}
+              <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
+
+              <div className="p-6">
+                <h3 className="font-display text-xl font-bold text-white mb-1">Save Changes</h3>
+                <p className="text-slate-500 text-sm font-mono mb-6">{tab?.fileName}</p>
+
+                <div className="mb-4">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
+                    Commit Message (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    placeholder="Describe your changes..."
+                    className="input"
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+                  />
+                </div>
+
+                <label className="flex items-center gap-3 mb-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={reload}
+                    onChange={e => setReload(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-cyber-500 focus:ring-cyber-500 focus:ring-offset-0"
+                  />
+                  <div>
+                    <span className="text-sm text-white font-medium">Reload plugin after save</span>
+                    <p className="text-xs text-slate-500">Apply changes immediately on the server</p>
+                  </div>
+                </label>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowSave(false)}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 btn btn-primary"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -218,25 +309,50 @@ export default function EditorPane({ paneIndex }: Props) {
 
       {/* Close Unsaved Confirmation */}
       {pendingCloseTabId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Unsaved Changes</h3>
-            <p className="text-gray-300 mb-6">
-              This file has unsaved changes. Are you sure you want to close it?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setPendingCloseTabId(null)}
-                className="px-4 py-2 text-gray-400 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmClose}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
-              >
-                Close without saving
-              </button>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="relative w-full max-w-md mx-4 animate-slide-up">
+            {/* Corner accents */}
+            <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-status-warning" />
+            <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-status-warning" />
+            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-status-warning" />
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-status-warning" />
+
+            <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden">
+              {/* Header stripe */}
+              <div className="h-1 bg-gradient-to-r from-status-warning via-amber-400 to-status-warning" />
+
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-status-warning/10 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-status-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-white">Unsaved Changes</h3>
+                    <p className="text-slate-500 text-sm font-mono">Changes will be lost</p>
+                  </div>
+                </div>
+
+                <p className="text-slate-400 mb-6">
+                  This file has unsaved changes. Are you sure you want to close it without saving?
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setPendingCloseTabId(null)}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    Keep Editing
+                  </button>
+                  <button
+                    onClick={confirmClose}
+                    className="flex-1 btn btn-danger"
+                  >
+                    Close Without Saving
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
