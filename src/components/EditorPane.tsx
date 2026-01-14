@@ -1,9 +1,43 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import Editor from '@monaco-editor/react';
+import Editor, { DiffEditor, Monaco } from '@monaco-editor/react';
 import TabBar from './TabBar';
 import { useEditorStore, type Tab } from '../stores/editorStore';
 import { fileApi } from '../api/endpoints';
+import { toast } from '../stores/toastStore';
 import clsx from 'clsx';
+import type { editor } from 'monaco-editor';
+import { parse as parseYaml, YAMLParseError } from 'yaml';
+
+interface ValidationError {
+  line: number;
+  column: number;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+// Helper to format relative time
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 10) return 'Saved just now';
+  if (diffSec < 60) return `Saved ${diffSec}s ago`;
+  if (diffMin === 1) return 'Saved 1 min ago';
+  if (diffMin < 60) return `Saved ${diffMin} min ago`;
+  if (diffHour === 1) return 'Saved 1 hour ago';
+  if (diffHour < 24) return `Saved ${diffHour} hours ago`;
+  if (diffDay === 1) return 'Saved 1 day ago';
+  return `Saved ${diffDay} days ago`;
+}
+
+// Format exact timestamp for tooltip
+function formatExactTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleString();
+}
 
 interface Props {
   paneIndex: 0 | 1;
@@ -22,6 +56,9 @@ export default function EditorPane({ paneIndex }: Props) {
     markTabSaved,
     closeTab,
     toggleSplit,
+    saveDrafts,
+    loadDrafts,
+    hasUnsavedChanges,
   } = useEditorStore();
 
   const activeTabId = paneIndex === 0 ? leftPaneTabId : rightPaneTabId;
@@ -35,9 +72,152 @@ export default function EditorPane({ paneIndex }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingCloseTabId, setPendingCloseTabId] = useState<string | null>(null);
+  const [showDiffView, setShowDiffView] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [draftSavedVisible, setDraftSavedVisible] = useState(false);
+  const [, setTimeUpdate] = useState(0); // Force re-render for relative time updates
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const saveDropdownRef = useRef<HTMLDivElement>(null);
+  const shortcutsRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
+  const draftSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasChanges = tab ? tab.content !== tab.originalContent : false;
+
+  // Determine if the file is YAML or JSON
+  const isYamlFile = tab?.filePath ? /\.(ya?ml)$/i.test(tab.filePath) : false;
+  const isJsonFile = tab?.filePath ? /\.json$/i.test(tab.filePath) : false;
+
+  // Validate YAML content
+  const validateYaml = useCallback((content: string): ValidationError[] => {
+    const errors: ValidationError[] = [];
+    try {
+      parseYaml(content);
+    } catch (e) {
+      if (e instanceof YAMLParseError) {
+        const line = e.linePos?.[0]?.line ?? 1;
+        const column = e.linePos?.[0]?.col ?? 1;
+        errors.push({
+          line,
+          column,
+          message: e.message.split('\n')[0], // Get just the first line of error
+          severity: 'error',
+        });
+      }
+    }
+    return errors;
+  }, []);
+
+  // Validate JSON content
+  const validateJson = useCallback((content: string): ValidationError[] => {
+    const errors: ValidationError[] = [];
+    try {
+      JSON.parse(content);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        // Try to extract line number from error message
+        const match = e.message.match(/position (\d+)/);
+        let line = 1;
+        let column = 1;
+        if (match) {
+          const position = parseInt(match[1], 10);
+          const lines = content.substring(0, position).split('\n');
+          line = lines.length;
+          column = lines[lines.length - 1].length + 1;
+        }
+        errors.push({
+          line,
+          column,
+          message: e.message,
+          severity: 'error',
+        });
+      }
+    }
+    return errors;
+  }, []);
+
+  // Update Monaco editor markers
+  const updateMarkers = useCallback((errors: ValidationError[]) => {
+    const monaco = monacoRef.current;
+    const editor = editorRef.current;
+    if (!monaco || !editor) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const markers = errors.map(err => ({
+      severity: err.severity === 'error'
+        ? monaco.MarkerSeverity.Error
+        : monaco.MarkerSeverity.Warning,
+      message: err.message,
+      startLineNumber: err.line,
+      startColumn: err.column,
+      endLineNumber: err.line,
+      endColumn: 1000, // Highlight to end of line
+    }));
+
+    monaco.editor.setModelMarkers(model, 'syntax-validation', markers);
+  }, []);
+
+  // Debounced validation effect
+  useEffect(() => {
+    if (!tab?.content || tab.isLoading) {
+      setValidationErrors([]);
+      return;
+    }
+
+    // Clear existing timeout
+    if (validationDebounceRef.current) {
+      clearTimeout(validationDebounceRef.current);
+    }
+
+    // Debounce validation by 500ms
+    validationDebounceRef.current = setTimeout(() => {
+      let errors: ValidationError[] = [];
+
+      if (isYamlFile) {
+        errors = validateYaml(tab.content);
+      } else if (isJsonFile) {
+        errors = validateJson(tab.content);
+      }
+
+      setValidationErrors(errors);
+      updateMarkers(errors);
+    }, 500);
+
+    return () => {
+      if (validationDebounceRef.current) {
+        clearTimeout(validationDebounceRef.current);
+      }
+    };
+  }, [tab?.content, tab?.isLoading, isYamlFile, isJsonFile, validateYaml, validateJson, updateMarkers]);
+
+  // Clear markers when tab changes or unmounts
+  useEffect(() => {
+    return () => {
+      const monaco = monacoRef.current;
+      const editor = editorRef.current;
+      if (monaco && editor) {
+        const model = editor.getModel();
+        if (model) {
+          monaco.editor.setModelMarkers(model, 'syntax-validation', []);
+        }
+      }
+    };
+  }, [activeTabId]);
+
+  // Scroll to first error
+  const scrollToFirstError = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || validationErrors.length === 0) return;
+
+    const firstError = validationErrors[0];
+    editor.revealLineInCenter(firstError.line);
+    editor.setPosition({ lineNumber: firstError.line, column: firstError.column });
+    editor.focus();
+  }, [validationErrors]);
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(paneIndex, tabId);
@@ -69,6 +249,12 @@ export default function EditorPane({ paneIndex }: Props) {
       await fileApi.save(tab.serverId, tab.filePath, tab.content, message || undefined, reload);
       markTabSaved(tab.id, tab.content);
       setMessage('');
+      // Show toast notification
+      if (reload) {
+        toast.success('Saved and reloaded plugin');
+      } else {
+        toast.success('File saved');
+      }
     } catch (e: any) {
       setError(e.response?.data?.message || 'Failed to save');
     } finally {
@@ -85,6 +271,12 @@ export default function EditorPane({ paneIndex }: Props) {
     try {
       await fileApi.save(tab.serverId, tab.filePath, tab.content, undefined, withReload);
       markTabSaved(tab.id, tab.content);
+      // Show toast notification
+      if (withReload) {
+        toast.success('Saved and reloaded plugin');
+      } else {
+        toast.success('File saved');
+      }
     } catch (e: any) {
       setError(e.response?.data?.message || 'Failed to save');
     } finally {
@@ -97,6 +289,24 @@ export default function EditorPane({ paneIndex }: Props) {
       updateContent(tab.id, tab.originalContent);
     }
   };
+
+  // Editor toolbar actions
+  const handleUndo = useCallback(() => {
+    editorRef.current?.trigger('keyboard', 'undo', null);
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    editorRef.current?.trigger('keyboard', 'redo', null);
+  }, []);
+
+  const handleFormat = useCallback(() => {
+    editorRef.current?.getAction('editor.action.formatDocument')?.run();
+  }, []);
+
+  const handleEditorMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -138,6 +348,81 @@ export default function EditorPane({ paneIndex }: Props) {
     }
   }, [showSaveDropdown]);
 
+  // Close shortcuts popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shortcutsRef.current && !shortcutsRef.current.contains(e.target as Node)) {
+        setShowShortcuts(false);
+      }
+    };
+
+    if (showShortcuts) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showShortcuts]);
+
+  // Reset diff view when tab changes
+  useEffect(() => {
+    setShowDiffView(false);
+  }, [activeTabId]);
+
+  // Load drafts on component mount (only for pane 0 to avoid duplicate loads)
+  useEffect(() => {
+    if (paneIndex === 0) {
+      loadDrafts();
+    }
+  }, [paneIndex, loadDrafts]);
+
+  // Auto-save drafts every 30 seconds when there are unsaved changes
+  useEffect(() => {
+    if (paneIndex !== 0) return; // Only run once for pane 0
+
+    const interval = setInterval(() => {
+      if (hasUnsavedChanges()) {
+        saveDrafts();
+        setDraftSavedVisible(true);
+        setTimeout(() => setDraftSavedVisible(false), 2000);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [paneIndex, hasUnsavedChanges, saveDrafts]);
+
+  // Debounced draft save on content change (5 second delay)
+  useEffect(() => {
+    if (!hasChanges) return;
+
+    // Clear any existing timeout
+    if (draftSaveDebounceRef.current) {
+      clearTimeout(draftSaveDebounceRef.current);
+    }
+
+    // Set up new debounced save
+    draftSaveDebounceRef.current = setTimeout(() => {
+      if (hasUnsavedChanges()) {
+        saveDrafts();
+        setDraftSavedVisible(true);
+        setTimeout(() => setDraftSavedVisible(false), 2000);
+      }
+    }, 5000);
+
+    return () => {
+      if (draftSaveDebounceRef.current) {
+        clearTimeout(draftSaveDebounceRef.current);
+      }
+    };
+  }, [tab?.content, hasChanges, hasUnsavedChanges, saveDrafts]);
+
+  // Update relative time display every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeUpdate(t => t + 1);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handlePaneClick = () => {
     if (!isActivePane) {
       setActivePaneIndex(paneIndex);
@@ -160,6 +445,7 @@ export default function EditorPane({ paneIndex }: Props) {
         onSplitToggle={toggleSplit}
         isSplit={isSplit}
         showSplitButton={paneIndex === 0}
+        serverId={tab?.serverId}
       />
 
       {tab ? (
@@ -173,6 +459,54 @@ export default function EditorPane({ paneIndex }: Props) {
                   <span className="w-1.5 h-1.5 rounded-full bg-status-warning animate-pulse" />
                   Modified
                 </span>
+              )}
+              {/* Last saved indicator */}
+              {tab.lastSaved && !hasChanges && (
+                <span
+                  className="text-xs font-mono text-slate-500 flex-shrink-0"
+                  title={formatExactTime(tab.lastSaved)}
+                >
+                  {formatRelativeTime(tab.lastSaved)}
+                </span>
+              )}
+              {/* Draft saved indicator */}
+              <span
+                className={clsx(
+                  'text-xs font-mono text-slate-500 flex-shrink-0 transition-opacity duration-500',
+                  draftSavedVisible ? 'opacity-100' : 'opacity-0'
+                )}
+              >
+                Draft saved
+              </span>
+              {/* Syntax validation status indicator */}
+              {(isYamlFile || isJsonFile) && !tab.isLoading && (
+                <button
+                  onClick={scrollToFirstError}
+                  className={clsx(
+                    'flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider flex-shrink-0 px-2 py-0.5 rounded transition-colors',
+                    validationErrors.length > 0
+                      ? 'text-status-error bg-status-error/10 hover:bg-status-error/20 cursor-pointer'
+                      : 'text-status-online cursor-default'
+                  )}
+                  title={validationErrors.length > 0 ? `${validationErrors.length} syntax error(s) - Click to go to first error` : 'Valid syntax'}
+                  disabled={validationErrors.length === 0}
+                >
+                  {validationErrors.length > 0 ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{validationErrors.length} {validationErrors.length === 1 ? 'error' : 'errors'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Valid</span>
+                    </>
+                  )}
+                </button>
               )}
             </div>
             {hasChanges && (
@@ -286,6 +620,114 @@ export default function EditorPane({ paneIndex }: Props) {
             </div>
           )}
 
+          {/* Editor Toolbar */}
+          <div className="flex items-center justify-between h-8 px-2 bg-slate-900/50 border-b border-slate-800">
+            {/* Left side buttons */}
+            <div className="flex items-center gap-1">
+              {/* Undo button */}
+              <button
+                onClick={handleUndo}
+                className="p-1.5 rounded text-slate-400 hover:text-cyber-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Undo (Ctrl+Z)"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+              </button>
+
+              {/* Redo button */}
+              <button
+                onClick={handleRedo}
+                className="p-1.5 rounded text-slate-400 hover:text-cyber-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Redo (Ctrl+Y)"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+                </svg>
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-slate-700 mx-1" />
+
+              {/* Format button */}
+              <button
+                onClick={handleFormat}
+                className="p-1.5 rounded text-slate-400 hover:text-cyber-400 hover:bg-slate-800 transition-colors"
+                title="Format Document (Shift+Alt+F)"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-slate-700 mx-1" />
+
+              {/* Diff view toggle */}
+              <button
+                onClick={() => setShowDiffView(!showDiffView)}
+                className={clsx(
+                  'p-1.5 rounded transition-colors',
+                  showDiffView
+                    ? 'text-cyber-400 bg-slate-800 border border-cyber-500/50'
+                    : 'text-slate-400 hover:text-cyber-400 hover:bg-slate-800',
+                  !hasChanges && 'opacity-50 cursor-not-allowed'
+                )}
+                title="Toggle Diff View"
+                disabled={!hasChanges}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Right side - Keyboard shortcuts */}
+            <div className="relative" ref={shortcutsRef}>
+              <button
+                onClick={() => setShowShortcuts(!showShortcuts)}
+                className={clsx(
+                  'p-1.5 rounded transition-colors',
+                  showShortcuts
+                    ? 'text-cyber-400 bg-slate-800'
+                    : 'text-slate-400 hover:text-cyber-400 hover:bg-slate-800'
+                )}
+                title="Keyboard Shortcuts"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </button>
+
+              {/* Shortcuts popover */}
+              {showShortcuts && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden animate-slide-up">
+                  <div className="p-3 border-b border-slate-800">
+                    <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400">Keyboard Shortcuts</h4>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    {[
+                      { keys: 'Ctrl+S', label: 'Save & Reload' },
+                      { keys: 'Ctrl+Shift+S', label: 'Save Only' },
+                      { keys: 'Ctrl+Alt+S', label: 'Save All Files' },
+                      { keys: 'Ctrl+Z', label: 'Undo' },
+                      { keys: 'Ctrl+Y', label: 'Redo' },
+                      { keys: 'Ctrl+F', label: 'Find' },
+                      { keys: 'Ctrl+H', label: 'Replace' },
+                      { keys: 'Ctrl+W', label: 'Close Tab' },
+                      { keys: 'Ctrl+Shift+F', label: 'Search Files' },
+                    ].map(({ keys, label }) => (
+                      <div key={keys} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-800/50">
+                        <span className="text-sm text-slate-300">{label}</span>
+                        <kbd className="px-2 py-0.5 text-xs font-mono bg-slate-800 border border-slate-700 rounded text-slate-400">{keys}</kbd>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Editor content */}
           {tab.isLoading ? (
             <div className="flex-1 flex items-center justify-center">
@@ -308,6 +750,28 @@ export default function EditorPane({ paneIndex }: Props) {
                 <p className="text-red-400 font-mono text-sm">{tab.error}</p>
               </div>
             </div>
+          ) : showDiffView && hasChanges ? (
+            <div className="flex-1">
+              <DiffEditor
+                height="100%"
+                language={tab.filePath.endsWith('.json') ? 'json' : 'yaml'}
+                original={tab.originalContent}
+                modified={tab.content}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontLigatures: true,
+                  wordWrap: 'on',
+                  lineNumbers: 'on',
+                  renderSideBySide: true,
+                  scrollBeyondLastLine: false,
+                  padding: { top: 12, bottom: 12 },
+                  readOnly: true,
+                }}
+              />
+            </div>
           ) : (
             <div className="flex-1">
               <Editor
@@ -315,6 +779,7 @@ export default function EditorPane({ paneIndex }: Props) {
                 language={tab.filePath.endsWith('.json') ? 'json' : 'yaml'}
                 value={tab.content}
                 onChange={v => updateContent(tab.id, v || '')}
+                onMount={handleEditorMount}
                 theme="vs-dark"
                 options={{
                   minimap: { enabled: false },

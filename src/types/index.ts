@@ -7,3 +7,5 @@ export interface FileListResponse { files: FileInfo[]; total: number; offset: nu
 export interface FileContent { path: string; content: string; lastModified: string; }
 export interface Version { id: string; message: string | null; createdBy: string | null; createdAt: string; }
 export interface VersionDetail extends Version { content: string; }
+export interface SearchMatch { line: number; content: string; }
+export interface SearchResult { filePath: string; matches: SearchMatch[]; }

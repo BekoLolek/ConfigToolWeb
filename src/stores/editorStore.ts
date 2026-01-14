@@ -11,7 +11,18 @@ export interface Tab {
   originalContent: string;
   isLoading: boolean;
   error: string | null;
+  lastSaved: number | null;
 }
+
+export interface RecentFile {
+  serverId: string;
+  filePath: string;
+  fileName: string;
+  openedAt: number;
+}
+
+const DRAFTS_STORAGE_KEY = 'editor-drafts';
+const MAX_RECENT_FILES = 10;
 
 interface EditorState {
   tabs: Tab[];
@@ -21,6 +32,7 @@ interface EditorState {
   isSplit: boolean;
   isFileTreeCollapsed: boolean;
   isHistoryCollapsed: boolean;
+  recentFiles: RecentFile[];
 
   openTab: (serverId: string, filePath: string) => Promise<void>;
   closeTab: (tabId: string) => boolean;
@@ -33,6 +45,20 @@ interface EditorState {
   toggleSplit: () => void;
   toggleFileTree: () => void;
   toggleHistory: () => void;
+
+  // Recent files
+  clearRecentFiles: () => void;
+
+  // Tab reordering
+  reorderTabs: (fromIndex: number, toIndex: number) => void;
+
+  // Batch save
+  saveAllTabs: (serverId: string, reload?: boolean) => Promise<{ success: string[]; failed: string[] }>;
+
+  // Drafts
+  saveDrafts: () => void;
+  loadDrafts: () => void;
+  clearDrafts: () => void;
 
   getTab: (tabId: string) => Tab | undefined;
   getActiveTab: (paneIndex: 0 | 1) => Tab | undefined;
@@ -53,18 +79,35 @@ export const useEditorStore = create<EditorState>()(
       isSplit: false,
       isFileTreeCollapsed: false,
       isHistoryCollapsed: false,
+      recentFiles: [],
 
       openTab: async (serverId, filePath) => {
         const tabId = getTabId(serverId, filePath);
-        const { tabs, activePaneIndex } = get();
+        const { tabs, activePaneIndex, recentFiles } = get();
         const existing = tabs.find(t => t.id === tabId);
+        const fileName = getFileName(filePath);
+
+        // Add to recent files
+        const newRecentFile: RecentFile = {
+          serverId,
+          filePath,
+          fileName,
+          openedAt: Date.now(),
+        };
+        const updatedRecentFiles = [
+          newRecentFile,
+          ...recentFiles.filter(f => !(f.serverId === serverId && f.filePath === filePath)),
+        ].slice(0, MAX_RECENT_FILES);
 
         if (existing) {
-          // Tab already open - just activate it
-          set(activePaneIndex === 0
-            ? { leftPaneTabId: tabId }
-            : { rightPaneTabId: tabId }
-          );
+          // Tab already open - just activate it and update recent files
+          set(state => ({
+            recentFiles: updatedRecentFiles,
+            ...(activePaneIndex === 0
+              ? { leftPaneTabId: tabId }
+              : { rightPaneTabId: tabId }
+            ),
+          }));
           return;
         }
 
@@ -73,15 +116,17 @@ export const useEditorStore = create<EditorState>()(
           id: tabId,
           serverId,
           filePath,
-          fileName: getFileName(filePath),
+          fileName,
           content: '',
           originalContent: '',
           isLoading: true,
           error: null,
+          lastSaved: null,
         };
 
         set(state => ({
           tabs: [...state.tabs, newTab],
+          recentFiles: updatedRecentFiles,
           ...(state.activePaneIndex === 0
             ? { leftPaneTabId: tabId }
             : { rightPaneTabId: tabId }
@@ -167,7 +212,9 @@ export const useEditorStore = create<EditorState>()(
       markTabSaved: (tabId, newContent) => {
         set(state => ({
           tabs: state.tabs.map(t =>
-            t.id === tabId ? { ...t, content: newContent, originalContent: newContent } : t
+            t.id === tabId
+              ? { ...t, content: newContent, originalContent: newContent, lastSaved: Date.now() }
+              : t
           ),
         }));
       },
@@ -223,6 +270,109 @@ export const useEditorStore = create<EditorState>()(
         set(state => ({ isHistoryCollapsed: !state.isHistoryCollapsed }));
       },
 
+      // Recent files
+      clearRecentFiles: () => {
+        set({ recentFiles: [] });
+      },
+
+      // Tab reordering
+      reorderTabs: (fromIndex, toIndex) => {
+        set(state => {
+          if (fromIndex === toIndex) return state;
+          if (fromIndex < 0 || toIndex < 0) return state;
+          if (fromIndex >= state.tabs.length || toIndex >= state.tabs.length) return state;
+
+          const newTabs = [...state.tabs];
+          const [removed] = newTabs.splice(fromIndex, 1);
+          newTabs.splice(toIndex, 0, removed);
+
+          return { tabs: newTabs };
+        });
+      },
+
+      // Batch save
+      saveAllTabs: async (serverId, reload = false) => {
+        const { tabs } = get();
+        const unsavedTabs = tabs.filter(
+          t => t.serverId === serverId && t.content !== t.originalContent
+        );
+
+        const success: string[] = [];
+        const failed: string[] = [];
+
+        await Promise.all(
+          unsavedTabs.map(async (tab) => {
+            try {
+              await fileApi.save(serverId, tab.filePath, tab.content, undefined, reload);
+              set(state => ({
+                tabs: state.tabs.map(t =>
+                  t.id === tab.id
+                    ? { ...t, originalContent: t.content, lastSaved: Date.now() }
+                    : t
+                ),
+              }));
+              success.push(tab.filePath);
+            } catch {
+              failed.push(tab.filePath);
+            }
+          })
+        );
+
+        return { success, failed };
+      },
+
+      // Drafts
+      saveDrafts: () => {
+        const { tabs } = get();
+        const drafts: Record<string, { content: string; savedAt: number }> = {};
+
+        tabs.forEach(tab => {
+          if (tab.content !== tab.originalContent) {
+            drafts[tab.id] = {
+              content: tab.content,
+              savedAt: Date.now(),
+            };
+          }
+        });
+
+        try {
+          localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+        } catch {
+          // localStorage might be full or unavailable
+        }
+      },
+
+      loadDrafts: () => {
+        try {
+          const draftsJson = localStorage.getItem(DRAFTS_STORAGE_KEY);
+          if (!draftsJson) return;
+
+          const drafts: Record<string, { content: string; savedAt: number }> = JSON.parse(draftsJson);
+          const { tabs } = get();
+
+          // Only restore drafts for tabs that are currently open
+          const updatedTabs = tabs.map(tab => {
+            const draft = drafts[tab.id];
+            if (draft && draft.content !== tab.originalContent) {
+              return { ...tab, content: draft.content };
+            }
+            return tab;
+          });
+
+          set({ tabs: updatedTabs });
+        } catch {
+          // Invalid JSON or other error
+        }
+      },
+
+      clearDrafts: () => {
+        try {
+          localStorage.removeItem(DRAFTS_STORAGE_KEY);
+        } catch {
+          // localStorage might be unavailable
+        }
+      },
+
       getTab: (tabId) => get().tabs.find(t => t.id === tabId),
 
       getActiveTab: (paneIndex) => {
@@ -245,6 +395,7 @@ export const useEditorStore = create<EditorState>()(
         isFileTreeCollapsed: state.isFileTreeCollapsed,
         isHistoryCollapsed: state.isHistoryCollapsed,
         isSplit: state.isSplit,
+        recentFiles: state.recentFiles,
       }),
     }
   )

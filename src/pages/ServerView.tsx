@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useServerStore } from '../stores/serverStore';
 import { useEditorStore } from '../stores/editorStore';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { healthApi } from '../api/endpoints';
 import FileTree from '../components/FileTree';
 import EditorPane from '../components/EditorPane';
 import VersionHistory from '../components/VersionHistory';
+import RecentFiles from '../components/RecentFiles';
+import SearchModal from '../components/SearchModal';
 import clsx from 'clsx';
+
+type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected';
 
 export default function ServerView() {
   const { serverId } = useParams<{ serverId: string }>();
@@ -27,6 +32,54 @@ export default function ServerView() {
 
   const [showToken, setShowToken] = useState(false);
   const [tokenCopied, setTokenCopied] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Connection status state
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
+  const [lastConnected, setLastConnected] = useState<Date | null>(null);
+  const healthCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const failedAttemptsRef = useRef(0);
+
+  const checkHealth = useCallback(async () => {
+    try {
+      await healthApi.check();
+      setConnectionStatus('connected');
+      setLastConnected(new Date());
+      failedAttemptsRef.current = 0;
+    } catch {
+      failedAttemptsRef.current += 1;
+      if (failedAttemptsRef.current === 1) {
+        // First failure - switch to reconnecting
+        setConnectionStatus('reconnecting');
+      } else if (failedAttemptsRef.current >= 3) {
+        // After 3 failed attempts - switch to disconnected
+        setConnectionStatus('disconnected');
+      }
+    }
+  }, []);
+
+  // Health check polling
+  useEffect(() => {
+    // Initial check
+    checkHealth();
+
+    const setupInterval = () => {
+      if (healthCheckIntervalRef.current) {
+        clearInterval(healthCheckIntervalRef.current);
+      }
+      // Poll every 5 seconds when disconnected/reconnecting, every 30 seconds when connected
+      const interval = connectionStatus === 'connected' ? 30000 : 5000;
+      healthCheckIntervalRef.current = setInterval(checkHealth, interval);
+    };
+
+    setupInterval();
+
+    return () => {
+      if (healthCheckIntervalRef.current) {
+        clearInterval(healthCheckIntervalRef.current);
+      }
+    };
+  }, [connectionStatus, checkHealth]);
 
   useEffect(() => {
     if (serverId) {
@@ -50,6 +103,18 @@ export default function ServerView() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
+  // Global keyboard shortcut for search (Ctrl+Shift+F)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const handleLoadDirectory = (dir: string) => loadDirectory(serverId!, dir);
 
   const handleFileSelect = (filePath: string) => {
@@ -64,6 +129,22 @@ export default function ServerView() {
       setTokenCopied(true);
       setTimeout(() => setTokenCopied(false), 2000);
     }
+  };
+
+  const getConnectionTooltip = () => {
+    if (connectionStatus === 'connected' && lastConnected) {
+      return `Connected - Last checked: ${lastConnected.toLocaleTimeString()}`;
+    }
+    if (connectionStatus === 'reconnecting') {
+      return 'Attempting to reconnect to API...';
+    }
+    if (connectionStatus === 'disconnected' && lastConnected) {
+      return `Disconnected - Last connected: ${lastConnected.toLocaleTimeString()}`;
+    }
+    if (connectionStatus === 'disconnected') {
+      return 'Unable to reach API server';
+    }
+    return 'Checking connection...';
   };
 
   // Get the active file for version history
@@ -123,8 +204,55 @@ export default function ServerView() {
           </span>
         </div>
 
-        {/* Token display */}
+        {/* Connection status indicator */}
         <div className="ml-auto flex items-center gap-3">
+          {/* Search button */}
+          <button
+            onClick={() => setShowSearch(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded hover:bg-slate-800 hover:border-cyber-500/50 text-slate-400 hover:text-cyber-400 transition-all group"
+            title="Search files (Ctrl+Shift+F)"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="text-xs font-mono uppercase tracking-wider">Search</span>
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-2xs font-mono bg-slate-900 border border-slate-700 rounded text-slate-500 group-hover:text-slate-400 group-hover:border-slate-600">
+              Ctrl+Shift+F
+            </kbd>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-slate-700" />
+
+          <div
+            className="tech-label cursor-default"
+            title={getConnectionTooltip()}
+          >
+            <div
+              className={clsx(
+                'status-led',
+                connectionStatus === 'connected' && 'status-led-online',
+                connectionStatus === 'reconnecting' && 'status-led-warning',
+                connectionStatus === 'disconnected' && 'status-led-offline'
+              )}
+            />
+            <span
+              className={clsx(
+                connectionStatus === 'connected' && 'text-status-online',
+                connectionStatus === 'reconnecting' && 'text-status-warning',
+                connectionStatus === 'disconnected' && 'text-slate-500'
+              )}
+            >
+              {connectionStatus === 'connected' && 'Connected'}
+              {connectionStatus === 'reconnecting' && 'Reconnecting...'}
+              {connectionStatus === 'disconnected' && 'Disconnected'}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-slate-700" />
+
+          {/* Token display */}
           <span className="text-xs font-mono uppercase tracking-wider text-slate-600">Token</span>
           <div className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded px-3 py-1.5">
             <code className="font-mono text-xs text-slate-400">
@@ -189,6 +317,7 @@ export default function ServerView() {
               </svg>
               <span>Files</span>
             </div>
+            <RecentFiles serverId={serverId!} serverName={currentServer.name} />
           </div>
           {/* File tree content */}
           <div className="flex-1 overflow-y-auto">
@@ -270,6 +399,13 @@ export default function ServerView() {
           </aside>
         )}
       </div>
+
+      {/* Search Modal */}
+      <SearchModal
+        serverId={serverId!}
+        isOpen={showSearch}
+        onClose={() => setShowSearch(false)}
+      />
     </div>
   );
 }

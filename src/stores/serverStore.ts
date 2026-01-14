@@ -14,6 +14,7 @@ interface ServerState {
   deleteServer: (id: string) => Promise<void>;
   loadDirectory: (sid: string, dir: string) => Promise<FileInfo[]>;
   clearFileCache: () => void;
+  invalidateDirectory: (dir: string) => void;
   updateServerStatus: (sid: string, online: boolean) => void;
 }
 
@@ -53,5 +54,6 @@ export const useServerStore = create<ServerState>((set, get) => ({
     }
   },
   clearFileCache: () => set({ fileCache: new Map() }),
+  invalidateDirectory: (dir) => set(st => { const newCache = new Map(st.fileCache); newCache.delete(dir); return { fileCache: newCache }; }),
   updateServerStatus: (sid, online) => set(st => ({ servers: st.servers.map(x => x.id === sid ? { ...x, online } : x), currentServer: st.currentServer?.id === sid ? { ...st.currentServer, online } : st.currentServer }))
 }));
