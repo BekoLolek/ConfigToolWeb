@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, PlanPricing, Subscription, Invoice, PaymentMethod, Usage, BillingPortalResponse } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, PlanPricing, Subscription, Invoice, PaymentMethod, Usage, BillingPortalResponse, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest } from '../types';
 export const healthApi = { check: () => api.get('/api/health') };
 export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }) };
 export const serverApi = {
@@ -72,4 +72,62 @@ export const billingApi = {
 
   // Usage
   getUsage: (orgId: string) => api.get<Usage>(`/api/organizations/${orgId}/usage`),
+};
+
+// API Keys
+export const apiKeyApi = {
+  list: (orgId: string) => api.get<ApiKey[]>(`/api/organizations/${orgId}/api-keys`),
+  create: (orgId: string, data: CreateApiKeyRequest) =>
+    api.post<CreateApiKeyResponse>(`/api/organizations/${orgId}/api-keys`, data),
+  revoke: (orgId: string, keyId: number) =>
+    api.delete(`/api/organizations/${orgId}/api-keys/${keyId}`),
+};
+
+// Webhooks
+export const webhookApi = {
+  list: (orgId: string) => api.get<Webhook[]>(`/api/organizations/${orgId}/webhooks`),
+  get: (orgId: string, webhookId: number) =>
+    api.get<Webhook>(`/api/organizations/${orgId}/webhooks/${webhookId}`),
+  create: (orgId: string, data: CreateWebhookRequest) =>
+    api.post<Webhook>(`/api/organizations/${orgId}/webhooks`, data),
+  update: (orgId: string, webhookId: number, data: CreateWebhookRequest) =>
+    api.put<Webhook>(`/api/organizations/${orgId}/webhooks/${webhookId}`, data),
+  delete: (orgId: string, webhookId: number) =>
+    api.delete(`/api/organizations/${orgId}/webhooks/${webhookId}`),
+  toggle: (orgId: string, webhookId: number, active: boolean) =>
+    api.patch(`/api/organizations/${orgId}/webhooks/${webhookId}/toggle`, { active }),
+  test: (orgId: string, webhookId: number) =>
+    api.post(`/api/organizations/${orgId}/webhooks/${webhookId}/test`),
+};
+
+// Scheduled Backups
+export const scheduledBackupApi = {
+  list: (orgId: string) => api.get<ScheduledBackup[]>(`/api/organizations/${orgId}/scheduled-backups`),
+  get: (orgId: string, backupId: number) =>
+    api.get<ScheduledBackup>(`/api/organizations/${orgId}/scheduled-backups/${backupId}`),
+  create: (orgId: string, data: CreateScheduledBackupRequest) =>
+    api.post<ScheduledBackup>(`/api/organizations/${orgId}/scheduled-backups`, data),
+  update: (orgId: string, backupId: number, data: CreateScheduledBackupRequest) =>
+    api.put<ScheduledBackup>(`/api/organizations/${orgId}/scheduled-backups/${backupId}`, data),
+  delete: (orgId: string, backupId: number) =>
+    api.delete(`/api/organizations/${orgId}/scheduled-backups/${backupId}`),
+  toggle: (orgId: string, backupId: number, enabled: boolean) =>
+    api.patch(`/api/organizations/${orgId}/scheduled-backups/${backupId}/toggle`, { enabled }),
+};
+
+// Git Configs
+export const gitConfigApi = {
+  list: (orgId: string) => api.get<GitConfig[]>(`/api/organizations/${orgId}/git-configs`),
+  get: (orgId: string, configId: number) =>
+    api.get<GitConfig>(`/api/organizations/${orgId}/git-configs/${configId}`),
+  create: (orgId: string, data: CreateGitConfigRequest) =>
+    api.post<GitConfig>(`/api/organizations/${orgId}/git-configs`, data),
+  update: (orgId: string, configId: number, data: CreateGitConfigRequest) =>
+    api.put<GitConfig>(`/api/organizations/${orgId}/git-configs/${configId}`, data),
+  delete: (orgId: string, configId: number) =>
+    api.delete(`/api/organizations/${orgId}/git-configs/${configId}`),
+  toggle: (orgId: string, configId: number, enabled: boolean) =>
+    api.patch(`/api/organizations/${orgId}/git-configs/${configId}/toggle`, { enabled }),
+  sync: (orgId: string, configId: number) =>
+    api.post(`/api/organizations/${orgId}/git-configs/${configId}/sync`),
 };
