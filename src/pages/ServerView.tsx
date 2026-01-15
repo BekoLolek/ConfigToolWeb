@@ -3,12 +3,17 @@ import { useParams, Link } from 'react-router-dom';
 import { useServerStore } from '../stores/serverStore';
 import { useEditorStore } from '../stores/editorStore';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { healthApi } from '../api/endpoints';
+import { healthApi, fileApi } from '../api/endpoints';
 import FileTree from '../components/FileTree';
 import EditorPane from '../components/EditorPane';
 import VersionHistory from '../components/VersionHistory';
 import RecentFiles from '../components/RecentFiles';
 import SearchModal from '../components/SearchModal';
+import RollbackModal from '../components/RollbackModal';
+import ThemeToggle from '../components/ThemeToggle';
+import ServerSettings from '../components/ServerSettings';
+import Breadcrumb from '../components/Breadcrumb';
+import FileUpload from '../components/FileUpload';
 import clsx from 'clsx';
 
 type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected';
@@ -33,6 +38,8 @@ export default function ServerView() {
   const [showToken, setShowToken] = useState(false);
   const [tokenCopied, setTokenCopied] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showRollback, setShowRollback] = useState(false);
 
   // Connection status state
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
@@ -156,6 +163,24 @@ export default function ServerView() {
     }
   };
 
+  const handleDownload = async () => {
+    if (!activeTab || !serverId) return;
+    try {
+      const response = await fileApi.download(serverId, activeTab.filePath);
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = activeTab.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error('Download failed:', e);
+    }
+  };
+
   if (!currentServer) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
@@ -171,13 +196,13 @@ export default function ServerView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-white">
       {/* Header */}
-      <header className="bg-slate-900/90 backdrop-blur-sm border-b border-slate-800 px-4 py-0 flex items-center gap-4 h-14 flex-shrink-0">
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 py-0 flex items-center gap-4 h-14 flex-shrink-0">
         {/* Back button */}
         <Link
           to="/"
-          className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors group"
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
         >
           <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -186,43 +211,91 @@ export default function ServerView() {
         </Link>
 
         {/* Divider */}
-        <div className="w-px h-6 bg-slate-700" />
+        <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
 
         {/* Server info */}
         <div className="flex items-center gap-3">
           <div className={`status-led ${currentServer.online ? 'status-led-online' : 'status-led-offline'}`} />
           <div>
-            <span className="font-display text-lg font-semibold text-white">{currentServer.name}</span>
+            <span className="font-display text-lg font-semibold text-slate-900 dark:text-white">{currentServer.name}</span>
           </div>
           <span className={clsx(
             'text-2xs font-mono uppercase tracking-wider px-2 py-0.5 rounded',
             currentServer.online
               ? 'bg-status-online/10 text-status-online border border-status-online/30'
-              : 'bg-slate-700/50 text-slate-500 border border-slate-600'
+              : 'bg-slate-200 dark:bg-slate-700/50 text-slate-500 border border-slate-300 dark:border-slate-600'
           )}>
             {currentServer.online ? 'Online' : 'Offline'}
           </span>
+          {/* Settings button */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-cyber-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            title="Server settings"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
         </div>
+
+        {/* Breadcrumb */}
+        {activeTab && (
+          <>
+            <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
+            <Breadcrumb filePath={activeTab.filePath} />
+          </>
+        )}
 
         {/* Connection status indicator */}
         <div className="ml-auto flex items-center gap-3">
+          {/* Download button */}
+          {activeTab && (
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-800 hover:border-cyber-500/50 text-slate-500 dark:text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all"
+              title="Download file"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span className="text-xs font-mono uppercase tracking-wider hidden sm:inline">Download</span>
+            </button>
+          )}
+
+          {/* Rollback button */}
+          <button
+            onClick={() => setShowRollback(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-800 hover:border-amber-500/50 text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 transition-all"
+            title="Rollback changes by date"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs font-mono uppercase tracking-wider hidden sm:inline">Rollback</span>
+          </button>
+
           {/* Search button */}
           <button
             onClick={() => setShowSearch(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded hover:bg-slate-800 hover:border-cyber-500/50 text-slate-400 hover:text-cyber-400 transition-all group"
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-800 hover:border-cyber-500/50 text-slate-500 dark:text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all group"
             title="Search files (Ctrl+Shift+F)"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <span className="text-xs font-mono uppercase tracking-wider">Search</span>
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-2xs font-mono bg-slate-900 border border-slate-700 rounded text-slate-500 group-hover:text-slate-400 group-hover:border-slate-600">
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-2xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-500 group-hover:text-slate-400 group-hover:border-slate-600">
               Ctrl+Shift+F
             </kbd>
           </button>
 
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {/* Divider */}
-          <div className="w-px h-6 bg-slate-700" />
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
 
           <div
             className="tech-label cursor-default"
@@ -253,9 +326,9 @@ export default function ServerView() {
           <div className="w-px h-6 bg-slate-700" />
 
           {/* Token display */}
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-600">Token</span>
-          <div className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded px-3 py-1.5">
-            <code className="font-mono text-xs text-slate-400">
+          <span className="text-xs font-mono uppercase tracking-wider text-slate-500">Token</span>
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5">
+            <code className="font-mono text-xs text-slate-600 dark:text-slate-400">
               {showToken ? currentServer.token : '••••••••••••••••'}
             </code>
             <button
@@ -305,7 +378,7 @@ export default function ServerView() {
         {/* File Tree Panel */}
         <aside
           className={clsx(
-            'bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 ease-out overflow-hidden',
+            'bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-out overflow-hidden',
             isFileTreeCollapsed ? 'w-0' : 'w-72'
           )}
         >
@@ -317,7 +390,14 @@ export default function ServerView() {
               </svg>
               <span>Files</span>
             </div>
-            <RecentFiles serverId={serverId!} serverName={currentServer.name} />
+            <div className="flex items-center gap-1">
+              <FileUpload
+                serverId={serverId!}
+                currentDirectory="plugins"
+                onUploadComplete={() => clearFileCache()}
+              />
+              <RecentFiles serverId={serverId!} serverName={currentServer.name} />
+            </div>
           </div>
           {/* File tree content */}
           <div className="flex-1 overflow-y-auto">
@@ -336,7 +416,7 @@ export default function ServerView() {
         <button
           onClick={toggleFileTree}
           className={clsx(
-            'w-6 flex items-center justify-center bg-slate-900 border-r border-slate-800 hover:bg-slate-800 text-slate-500 hover:text-cyber-400 transition-all flex-shrink-0',
+            'w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all flex-shrink-0',
             isFileTreeCollapsed && 'border-l'
           )}
           title={isFileTreeCollapsed ? 'Show files' : 'Hide files'}
@@ -352,7 +432,7 @@ export default function ServerView() {
         </button>
 
         {/* Editor area */}
-        <main className="flex-1 flex overflow-hidden bg-slate-950">
+        <main className="flex-1 flex overflow-hidden bg-slate-100 dark:bg-slate-950">
           <EditorPane paneIndex={0} />
           {isSplit && (
             <>
@@ -367,7 +447,7 @@ export default function ServerView() {
           <button
             onClick={toggleHistory}
             className={clsx(
-              'w-6 flex items-center justify-center bg-slate-900 border-l border-slate-800 hover:bg-slate-800 text-slate-500 hover:text-cyber-400 transition-all flex-shrink-0',
+              'w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all flex-shrink-0',
               isHistoryCollapsed && 'border-r'
             )}
             title={isHistoryCollapsed ? 'Show history' : 'Hide history'}
@@ -387,7 +467,7 @@ export default function ServerView() {
         {activeTab && (
           <aside
             className={clsx(
-              'bg-slate-900 border-l border-slate-800 overflow-hidden transition-all duration-300 ease-out flex flex-col',
+              'bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300 ease-out flex flex-col',
               isHistoryCollapsed ? 'w-0' : 'w-80'
             )}
           >
@@ -405,6 +485,24 @@ export default function ServerView() {
         serverId={serverId!}
         isOpen={showSearch}
         onClose={() => setShowSearch(false)}
+      />
+
+      {/* Server Settings Modal */}
+      <ServerSettings
+        server={currentServer}
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+
+      {/* Rollback Modal */}
+      <RollbackModal
+        serverId={serverId!}
+        isOpen={showRollback}
+        onClose={() => setShowRollback(false)}
+        onRollbackComplete={() => {
+          // Refresh file cache to show rolled back content
+          clearFileCache();
+        }}
       />
     </div>
   );

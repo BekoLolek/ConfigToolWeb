@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useServerStore } from '../stores/serverStore';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Dashboard() {
   const { user, logout, refreshToken } = useAuthStore();
-  const { servers, loading, fetchServers, createServer, deleteServer } = useServerStore();
+  const { servers, groups, loading, fetchServers, fetchGroups, createServer, deleteServer } = useServerStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchServers();
+    fetchGroups();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -31,32 +34,36 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  const onlineCount = servers.filter(s => s.online).length;
+  const filteredServers = selectedGroup
+    ? servers.filter(s => s.groupName === selectedGroup)
+    : servers;
+  const onlineCount = filteredServers.filter(s => s.online).length;
 
   return (
-    <div className="min-h-screen bg-slate-950 bg-ops-grid">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid">
       {/* Top navigation bar */}
-      <header className="bg-slate-900/90 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-40">
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded border border-cyber-500/30 bg-slate-800/50 flex items-center justify-center">
-                <svg className="w-4 h-4 text-cyber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-8 h-8 rounded border border-cyber-500/30 bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-cyber-500 dark:text-cyber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                 </svg>
               </div>
-              <span className="font-display text-lg font-bold tracking-wide">
-                CONFIG<span className="text-cyber-400">TOOL</span>
+              <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white">
+                CONFIG<span className="text-cyber-500 dark:text-cyber-400">TOOL</span>
               </span>
             </div>
 
             {/* User info */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <Link to="/profile" className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity">
                 <span className="w-2 h-2 rounded-full bg-cyber-500 animate-pulse" />
                 <span className="text-slate-500 font-mono text-xs uppercase">{user?.email}</span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="btn btn-ghost text-xs"
@@ -69,39 +76,69 @@ export default function Dashboard() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Dashboard header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div>
-            <h1 className="font-display text-3xl font-bold text-white tracking-wide mb-2">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-wide mb-1 sm:mb-2">
               Operations Dashboard
             </h1>
-            <p className="text-slate-500 font-mono text-sm uppercase tracking-wider">
+            <p className="text-slate-500 font-mono text-xs sm:text-sm uppercase tracking-wider">
               Server Fleet Management
             </p>
           </div>
 
           {/* Stats row */}
-          <div className="flex gap-4">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-lg px-5 py-3">
-              <div className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Total</div>
-              <div className="font-display text-2xl font-bold text-white">{servers.length}</div>
+          <div className="flex gap-2 sm:gap-4 flex-wrap">
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg px-3 sm:px-5 py-2 sm:py-3 shadow-sm dark:shadow-none">
+              <div className="text-2xs sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Total</div>
+              <div className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{filteredServers.length}</div>
             </div>
-            <div className="bg-slate-900/60 border border-slate-800 rounded-lg px-5 py-3">
-              <div className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Online</div>
-              <div className="font-display text-2xl font-bold text-status-online">{onlineCount}</div>
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg px-3 sm:px-5 py-2 sm:py-3 shadow-sm dark:shadow-none">
+              <div className="text-2xs sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Online</div>
+              <div className="font-display text-xl sm:text-2xl font-bold text-status-online">{onlineCount}</div>
             </div>
-            <div className="bg-slate-900/60 border border-slate-800 rounded-lg px-5 py-3">
-              <div className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Offline</div>
-              <div className="font-display text-2xl font-bold text-slate-500">{servers.length - onlineCount}</div>
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg px-3 sm:px-5 py-2 sm:py-3 shadow-sm dark:shadow-none">
+              <div className="text-2xs sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Offline</div>
+              <div className="font-display text-xl sm:text-2xl font-bold text-slate-500">{filteredServers.length - onlineCount}</div>
             </div>
           </div>
         </div>
 
+        {/* Group filter */}
+        {groups.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <span className="text-xs font-mono uppercase tracking-wider text-slate-500 hidden sm:inline">Filter:</span>
+            <button
+              onClick={() => setSelectedGroup(null)}
+              className={`px-2 sm:px-3 py-1 text-2xs sm:text-xs font-mono uppercase tracking-wider rounded-full transition-all ${
+                selectedGroup === null
+                  ? 'bg-cyber-500 text-white'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'
+              }`}
+            >
+              All
+            </button>
+            {groups.map(group => (
+              <button
+                key={group}
+                onClick={() => setSelectedGroup(group)}
+                className={`px-2 sm:px-3 py-1 text-2xs sm:text-xs font-mono uppercase tracking-wider rounded-full transition-all ${
+                  selectedGroup === group
+                    ? 'bg-cyber-500 text-white'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Action bar */}
-        <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-800">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Server Nodes
+        <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+            Server Nodes {selectedGroup && `/ ${selectedGroup}`}
           </h2>
           <button
             onClick={() => setShowCreate(true)}
@@ -125,34 +162,36 @@ export default function Dashboard() {
               <span className="font-mono text-sm uppercase tracking-wider">Loading servers...</span>
             </div>
           </div>
-        ) : servers.length === 0 ? (
+        ) : filteredServers.length === 0 ? (
           <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 mb-6 border-2 border-dashed border-slate-700 rounded-xl">
-              <svg className="w-10 h-10 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="inline-flex items-center justify-center w-20 h-20 mb-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+              <svg className="w-10 h-10 text-slate-400 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
               </svg>
             </div>
             <p className="text-slate-500 font-mono text-sm uppercase tracking-wider mb-4">
-              No servers registered
+              {selectedGroup ? `No servers in group "${selectedGroup}"` : 'No servers registered'}
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="btn btn-primary"
-            >
-              Register First Server
-            </button>
+            {!selectedGroup && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="btn btn-primary"
+              >
+                Register First Server
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {servers.map((server, index) => (
+            {filteredServers.map((server, index) => (
               <Link
                 key={server.id}
                 to={`/servers/${server.id}`}
-                className="group relative bg-slate-900/60 border border-slate-800 rounded-lg overflow-hidden hover:border-cyber-500/50 transition-all duration-300 animate-fade-in"
+                className="group relative bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden hover:border-cyber-500/50 transition-all duration-300 animate-fade-in shadow-sm dark:shadow-none"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Status bar */}
-                <div className={`h-1 ${server.online ? 'bg-status-online' : 'bg-slate-700'}`} />
+                <div className={`h-1 ${server.online ? 'bg-status-online' : 'bg-slate-300 dark:bg-slate-700'}`} />
 
                 <div className="p-5">
                   {/* Header */}
@@ -160,7 +199,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3">
                       <div className={`status-led ${server.online ? 'status-led-online' : 'status-led-offline'}`} />
                       <div>
-                        <h3 className="font-display text-lg font-semibold text-white group-hover:text-cyber-400 transition-colors">
+                        <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white group-hover:text-cyber-500 dark:group-hover:text-cyber-400 transition-colors">
                           {server.name}
                         </h3>
                         <span className="text-xs font-mono uppercase tracking-wider text-slate-500">
@@ -176,7 +215,7 @@ export default function Dashboard() {
                           deleteServer(server.id);
                         }
                       }}
-                      className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                      className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
                       title="Delete server"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,18 +224,27 @@ export default function Dashboard() {
                     </button>
                   </div>
 
+                  {/* Group badge */}
+                  {server.groupName && (
+                    <div className="mb-3">
+                      <span className="inline-flex items-center px-2 py-0.5 text-2xs font-mono uppercase tracking-wider bg-cyber-500/10 text-cyber-600 dark:text-cyber-400 border border-cyber-500/30 rounded">
+                        {server.groupName}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Server ID */}
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-slate-600 uppercase tracking-wider">Node ID</span>
-                    <code className="font-mono text-slate-500">{server.id.slice(0, 8)}...</code>
+                    <span className="font-mono text-slate-500 dark:text-slate-600 uppercase tracking-wider">Node ID</span>
+                    <code className="font-mono text-slate-600 dark:text-slate-500">{server.id.slice(0, 8)}...</code>
                   </div>
 
                   {/* Action hint */}
-                  <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between">
-                    <span className="text-xs font-mono uppercase tracking-wider text-slate-600">
+                  <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-600">
                       Click to manage
                     </span>
-                    <svg className="w-4 h-4 text-slate-600 group-hover:text-cyber-400 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-cyber-500 dark:group-hover:text-cyber-400 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -214,7 +262,7 @@ export default function Dashboard() {
 
       {/* Create server modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
           <div className="relative w-full max-w-md mx-4 animate-slide-up">
             {/* Corner accents */}
             <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />
@@ -222,12 +270,12 @@ export default function Dashboard() {
             <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-cyber-500" />
             <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-cyber-500" />
 
-            <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl dark:shadow-panel overflow-hidden">
               {/* Header stripe */}
               <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
 
               <form onSubmit={handleCreate} className="p-6">
-                <h3 className="font-display text-xl font-bold text-white mb-1">
+                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
                   Register New Server
                 </h3>
                 <p className="text-slate-500 text-sm font-mono uppercase tracking-wider mb-6">

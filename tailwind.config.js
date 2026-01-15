@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Base palette - deep industrial slate
+        // Base palette - deep industrial slate (dark mode)
         slate: {
           950: '#0a0c10',
           900: '#0f1218',
@@ -16,6 +16,9 @@ export default {
           500: '#525c73',
           400: '#6b7590',
           300: '#8a94ad',
+          200: '#c1c7d4',
+          100: '#e2e5eb',
+          50: '#f5f6f8',
         },
         // Primary accent - cyan/teal
         cyber: {

@@ -1,16 +1,19 @@
 import { create } from 'zustand';
-import type { ServerListItem, Server, FileInfo } from '../types';
+import type { ServerListItem, Server, FileInfo, UpdateServerRequest } from '../types';
 import { serverApi, fileApi } from '../api/endpoints';
 
 interface ServerState {
   servers: ServerListItem[];
+  groups: string[];
   currentServer: Server | null;
   fileCache: Map<string, FileInfo[]>; // dir -> files
   loadingDirs: Set<string>;
   loading: boolean;
   fetchServers: () => Promise<void>;
+  fetchGroups: () => Promise<void>;
   fetchServer: (id: string) => Promise<void>;
   createServer: (name: string) => Promise<Server>;
+  updateServer: (id: string, data: UpdateServerRequest) => Promise<Server>;
   deleteServer: (id: string) => Promise<void>;
   loadDirectory: (sid: string, dir: string) => Promise<FileInfo[]>;
   clearFileCache: () => void;
@@ -19,10 +22,12 @@ interface ServerState {
 }
 
 export const useServerStore = create<ServerState>((set, get) => ({
-  servers: [], currentServer: null, fileCache: new Map(), loadingDirs: new Set(), loading: false,
+  servers: [], groups: [], currentServer: null, fileCache: new Map(), loadingDirs: new Set(), loading: false,
   fetchServers: async () => { set({ loading: true }); try { set({ servers: (await serverApi.list()).data }); } finally { set({ loading: false }); } },
+  fetchGroups: async () => { try { set({ groups: (await serverApi.getGroups()).data }); } catch { /* ignore */ } },
   fetchServer: async (id) => { set({ loading: true }); try { set({ currentServer: (await serverApi.get(id)).data }); } finally { set({ loading: false }); } },
-  createServer: async (name) => { const s = (await serverApi.create(name)).data; set(st => ({ servers: [...st.servers, { id: s.id, name: s.name, online: false, lastSeenAt: null }] })); return s; },
+  createServer: async (name) => { const s = (await serverApi.create(name)).data; set(st => ({ servers: [...st.servers, { id: s.id, name: s.name, online: false, lastSeenAt: null, groupName: null }] })); return s; },
+  updateServer: async (id, data) => { const s = (await serverApi.update(id, data)).data; set(st => ({ currentServer: st.currentServer?.id === id ? s : st.currentServer, servers: st.servers.map(x => x.id === id ? { ...x, name: s.name, groupName: s.groupName } : x) })); return s; },
   deleteServer: async (id) => { await serverApi.delete(id); set(st => ({ servers: st.servers.filter(x => x.id !== id) })); },
   loadDirectory: async (sid, dir) => {
     const { fileCache, loadingDirs } = get();
