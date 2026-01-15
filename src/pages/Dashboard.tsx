@@ -258,6 +258,92 @@ export default function Dashboard() {
             ))}
           </div>
         )}
+
+        {/* Quick Access Section */}
+        <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-4">
+            Settings & Integrations
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Link
+              to="/billing"
+              className="group bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 hover:border-cyber-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-cyber-500/10 transition-colors">
+                <svg className="w-5 h-5 text-slate-500 group-hover:text-cyber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <p className="font-display font-semibold text-slate-900 dark:text-white text-sm">Billing</p>
+              <p className="text-2xs text-slate-500 font-mono uppercase tracking-wider mt-1">Subscription</p>
+            </Link>
+
+            <Link
+              to="/api-keys"
+              className="group bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 hover:border-cyber-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-cyber-500/10 transition-colors">
+                <svg className="w-5 h-5 text-slate-500 group-hover:text-cyber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <p className="font-display font-semibold text-slate-900 dark:text-white text-sm">API Keys</p>
+              <p className="text-2xs text-slate-500 font-mono uppercase tracking-wider mt-1">Access Tokens</p>
+            </Link>
+
+            <Link
+              to="/webhooks"
+              className="group bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 hover:border-cyber-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-cyber-500/10 transition-colors">
+                <svg className="w-5 h-5 text-slate-500 group-hover:text-cyber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <p className="font-display font-semibold text-slate-900 dark:text-white text-sm">Webhooks</p>
+              <p className="text-2xs text-slate-500 font-mono uppercase tracking-wider mt-1">Notifications</p>
+            </Link>
+
+            <Link
+              to="/scheduled-backups"
+              className="group bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 hover:border-cyber-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-cyber-500/10 transition-colors">
+                <svg className="w-5 h-5 text-slate-500 group-hover:text-cyber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="font-display font-semibold text-slate-900 dark:text-white text-sm">Backups</p>
+              <p className="text-2xs text-slate-500 font-mono uppercase tracking-wider mt-1">Scheduled</p>
+            </Link>
+
+            <Link
+              to="/git-configs"
+              className="group bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 hover:border-cyber-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-cyber-500/10 transition-colors">
+                <svg className="w-5 h-5 text-slate-500 group-hover:text-cyber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </div>
+              <p className="font-display font-semibold text-slate-900 dark:text-white text-sm">Git Sync</p>
+              <p className="text-2xs text-slate-500 font-mono uppercase tracking-wider mt-1">Repositories</p>
+            </Link>
+
+            <Link
+              to="/profile"
+              className="group bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 hover:border-cyber-500/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:bg-cyber-500/10 transition-colors">
+                <svg className="w-5 h-5 text-slate-500 group-hover:text-cyber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <p className="font-display font-semibold text-slate-900 dark:text-white text-sm">Profile</p>
+              <p className="text-2xs text-slate-500 font-mono uppercase tracking-wider mt-1">Settings</p>
+            </Link>
+          </div>
+        </div>
       </main>
 
       {/* Create server modal */}
