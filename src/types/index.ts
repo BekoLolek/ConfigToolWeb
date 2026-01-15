@@ -211,3 +211,107 @@ export interface CreateGitConfigRequest {
   directoryPath?: string;
   authToken?: string;
 }
+
+// Template Types
+export interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  pluginName: string;
+  pluginVersion: string | null;
+  content: string | null;
+  fileName: string;
+  authorId: string;
+  authorEmail: string;
+  organizationId: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  isPublic: boolean;
+  isVerified: boolean;
+  downloadCount: number;
+  viewCount: number;
+  averageRating: number | null;
+  ratingCount: number;
+  tags: string | null;
+  minServerVersion: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  displayOrder: number;
+  templateCount: number;
+  createdAt: string;
+}
+
+export interface TemplateRating {
+  id: string;
+  templateId: string;
+  userId: string;
+  userEmail: string;
+  score: number;
+  review: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateVariable {
+  id: string;
+  templateId: string;
+  name: string;
+  displayName: string | null;
+  description: string | null;
+  defaultValue: string | null;
+  type: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTILINE';
+  options: string | null;
+  isRequired: boolean;
+  displayOrder: number;
+  placeholder: string | null;
+  validationRegex: string | null;
+}
+
+export interface CreateTemplateRequest {
+  name: string;
+  description?: string;
+  pluginName: string;
+  pluginVersion?: string;
+  content: string;
+  fileName?: string;
+  categoryId?: string;
+  isPublic: boolean;
+  tags?: string;
+  minServerVersion?: string;
+}
+
+export interface CreateRatingRequest {
+  score: number;
+  review?: string;
+}
+
+export interface CreateVariableRequest {
+  name: string;
+  displayName?: string;
+  description?: string;
+  defaultValue?: string;
+  type?: string;
+  options?: string;
+  isRequired: boolean;
+  displayOrder?: number;
+  placeholder?: string;
+  validationRegex?: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}

@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, PlanPricing, Subscription, Invoice, PaymentMethod, Usage, BillingPortalResponse, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, PlanPricing, Subscription, Invoice, PaymentMethod, Usage, BillingPortalResponse, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest } from '../types';
 export const healthApi = { check: () => api.get('/api/health') };
 export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }) };
 export const serverApi = {
@@ -130,4 +130,97 @@ export const gitConfigApi = {
     api.patch(`/api/organizations/${orgId}/git-configs/${configId}/toggle`, { enabled }),
   sync: (orgId: string, configId: number) =>
     api.post(`/api/organizations/${orgId}/git-configs/${configId}/sync`),
+};
+
+// Template & Marketplace API
+export const templateApi = {
+  // Public marketplace
+  getMarketplace: (page = 0, size = 20, sort = 'downloadCount', direction = 'desc') =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates`, { params: { page, size, sort, direction } }),
+
+  getPopular: (page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/popular`, { params: { page, size } }),
+
+  getRecent: (page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/recent`, { params: { page, size } }),
+
+  getTopRated: (page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/top-rated`, { params: { page, size } }),
+
+  getVerified: (page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/verified`, { params: { page, size } }),
+
+  search: (query: string, page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/search`, { params: { query, page, size } }),
+
+  getByPlugin: (pluginName: string, page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/plugin/${pluginName}`, { params: { page, size } }),
+
+  getByCategory: (categoryId: string, page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/marketplace/templates/category/${categoryId}`, { params: { page, size } }),
+
+  getPluginNames: () =>
+    api.get<string[]>(`/api/marketplace/plugins`),
+
+  // Single template operations
+  get: (id: string) =>
+    api.get<Template>(`/api/templates/${id}`),
+
+  download: (id: string) =>
+    api.get<Template>(`/api/templates/${id}/download`),
+
+  // User templates
+  getUserTemplates: (page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/user/templates`, { params: { page, size } }),
+
+  create: (data: CreateTemplateRequest) =>
+    api.post<Template>(`/api/templates`, data),
+
+  update: (id: string, data: Partial<CreateTemplateRequest>) =>
+    api.patch<Template>(`/api/templates/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/api/templates/${id}`),
+
+  // Organization templates
+  getOrgTemplates: (orgId: string, page = 0, size = 20) =>
+    api.get<PageResponse<Template>>(`/api/organizations/${orgId}/templates`, { params: { page, size } }),
+
+  // Variables
+  getVariables: (templateId: string) =>
+    api.get<TemplateVariable[]>(`/api/templates/${templateId}/variables`),
+
+  addVariable: (templateId: string, data: CreateVariableRequest) =>
+    api.post<TemplateVariable>(`/api/templates/${templateId}/variables`, data),
+
+  deleteVariable: (variableId: string) =>
+    api.delete(`/api/templates/variables/${variableId}`),
+
+  applyVariables: (templateId: string, values: Record<string, string>) =>
+    api.post<{ content: string }>(`/api/templates/${templateId}/apply`, { values }),
+
+  // Ratings
+  getRatings: (templateId: string, page = 0, size = 20) =>
+    api.get<PageResponse<TemplateRating>>(`/api/templates/${templateId}/ratings`, { params: { page, size } }),
+
+  rate: (templateId: string, data: CreateRatingRequest) =>
+    api.post<TemplateRating>(`/api/templates/${templateId}/ratings`, data),
+
+  deleteRating: (templateId: string) =>
+    api.delete(`/api/templates/${templateId}/ratings`),
+};
+
+// Categories API
+export const categoryApi = {
+  getAll: () =>
+    api.get<TemplateCategory[]>(`/api/marketplace/categories`),
+
+  getActive: () =>
+    api.get<TemplateCategory[]>(`/api/marketplace/categories/active`),
+
+  get: (id: string) =>
+    api.get<TemplateCategory>(`/api/marketplace/categories/${id}`),
+
+  getBySlug: (slug: string) =>
+    api.get<TemplateCategory>(`/api/marketplace/categories/slug/${slug}`),
 };
