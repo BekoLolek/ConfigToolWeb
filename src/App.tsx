@@ -11,8 +11,10 @@ import Webhooks from './pages/Webhooks';
 import ScheduledBackups from './pages/ScheduledBackups';
 import GitConfigs from './pages/GitConfigs';
 import Marketplace from './pages/Marketplace';
+import TemplateLibrary from './pages/TemplateLibrary';
+import TemplateDetail from './pages/TemplateDetail';
 import ToastContainer from './components/Toast';
 function PR({ children }: { children: React.ReactNode }) { return useAuthStore().isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />; }
 export default function App() {
-  return <BrowserRouter><Routes><Route path="/login" element={<Login />} /><Route path="/pricing" element={<Pricing />} /><Route path="/marketplace" element={<Marketplace />} /><Route path="/" element={<PR><Dashboard /></PR>} /><Route path="/servers/:serverId" element={<PR><ServerView /></PR>} /><Route path="/billing" element={<PR><Billing /></PR>} /><Route path="/profile" element={<PR><Profile /></PR>} /><Route path="/api-keys" element={<PR><ApiKeys /></PR>} /><Route path="/webhooks" element={<PR><Webhooks /></PR>} /><Route path="/scheduled-backups" element={<PR><ScheduledBackups /></PR>} /><Route path="/git-configs" element={<PR><GitConfigs /></PR>} /><Route path="*" element={<Navigate to="/" replace />} /></Routes><ToastContainer /></BrowserRouter>;
+  return <BrowserRouter><Routes><Route path="/login" element={<Login />} /><Route path="/pricing" element={<Pricing />} /><Route path="/marketplace" element={<Marketplace />} /><Route path="/templates/:templateId" element={<TemplateDetail />} /><Route path="/templates" element={<PR><TemplateLibrary /></PR>} /><Route path="/" element={<PR><Dashboard /></PR>} /><Route path="/servers/:serverId" element={<PR><ServerView /></PR>} /><Route path="/billing" element={<PR><Billing /></PR>} /><Route path="/profile" element={<PR><Profile /></PR>} /><Route path="/api-keys" element={<PR><ApiKeys /></PR>} /><Route path="/webhooks" element={<PR><Webhooks /></PR>} /><Route path="/scheduled-backups" element={<PR><ScheduledBackups /></PR>} /><Route path="/git-configs" element={<PR><GitConfigs /></PR>} /><Route path="*" element={<Navigate to="/" replace />} /></Routes><ToastContainer /></BrowserRouter>;
 }
