@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useServerStore } from '../stores/serverStore';
 import { useEditorStore } from '../stores/editorStore';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -10,7 +10,6 @@ import VersionHistory from '../components/VersionHistory';
 import RecentFiles from '../components/RecentFiles';
 import SearchModal from '../components/SearchModal';
 import RollbackModal from '../components/RollbackModal';
-import ThemeToggle from '../components/ThemeToggle';
 import ServerSettings from '../components/ServerSettings';
 import Breadcrumb from '../components/Breadcrumb';
 import FileUpload from '../components/FileUpload';
@@ -183,7 +182,7 @@ export default function ServerView() {
 
   if (!currentServer) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+      <div className="flex-1 flex items-center justify-center bg-slate-950 text-white">
         <div className="flex items-center gap-3 text-slate-500">
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -196,23 +195,9 @@ export default function ServerView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-white">
+    <div className="bg-slate-50 dark:bg-slate-950 flex flex-col flex-1 text-slate-900 dark:text-white">
       {/* Header */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 py-0 flex items-center gap-4 h-14 flex-shrink-0">
-        {/* Back button */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
-        >
-          <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          <span className="font-display text-sm uppercase tracking-wider">Back</span>
-        </Link>
-
-        {/* Divider */}
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
-
         {/* Server info */}
         <div className="flex items-center gap-3">
           <div className={`status-led ${currentServer.online ? 'status-led-online' : 'status-led-offline'}`} />
@@ -248,7 +233,7 @@ export default function ServerView() {
           </>
         )}
 
-        {/* Connection status indicator */}
+        {/* Action buttons */}
         <div className="ml-auto flex items-center gap-3">
           {/* Download button */}
           {activeTab && (
@@ -291,12 +276,10 @@ export default function ServerView() {
             </kbd>
           </button>
 
-          {/* Theme Toggle */}
-          <ThemeToggle />
-
           {/* Divider */}
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
 
+          {/* Connection status indicator */}
           <div
             className="tech-label cursor-default"
             title={getConnectionTooltip()}
@@ -323,7 +306,7 @@ export default function ServerView() {
           </div>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-slate-700" />
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
 
           {/* Token display */}
           <span className="text-xs font-mono uppercase tracking-wider text-slate-500">Token</span>

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import AppShell from './components/AppShell';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ServerView from './pages/ServerView';
@@ -14,7 +15,42 @@ import Marketplace from './pages/Marketplace';
 import TemplateLibrary from './pages/TemplateLibrary';
 import TemplateDetail from './pages/TemplateDetail';
 import ToastContainer from './components/Toast';
-function PR({ children }: { children: React.ReactNode }) { return useAuthStore().isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />; }
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <AppShell>{children}</AppShell>;
+}
+
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
 export default function App() {
-  return <BrowserRouter><Routes><Route path="/login" element={<Login />} /><Route path="/pricing" element={<Pricing />} /><Route path="/marketplace" element={<Marketplace />} /><Route path="/templates/:templateId" element={<TemplateDetail />} /><Route path="/templates" element={<PR><TemplateLibrary /></PR>} /><Route path="/" element={<PR><Dashboard /></PR>} /><Route path="/servers/:serverId" element={<PR><ServerView /></PR>} /><Route path="/billing" element={<PR><Billing /></PR>} /><Route path="/profile" element={<PR><Profile /></PR>} /><Route path="/api-keys" element={<PR><ApiKeys /></PR>} /><Route path="/webhooks" element={<PR><Webhooks /></PR>} /><Route path="/scheduled-backups" element={<PR><ScheduledBackups /></PR>} /><Route path="/git-configs" element={<PR><GitConfigs /></PR>} /><Route path="*" element={<Navigate to="/" replace />} /></Routes><ToastContainer /></BrowserRouter>;
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes - no AppShell */}
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/pricing" element={<PublicRoute><Pricing /></PublicRoute>} />
+
+        {/* Protected routes - with AppShell */}
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/servers/:serverId" element={<ProtectedRoute><ServerView /></ProtectedRoute>} />
+        <Route path="/templates" element={<ProtectedRoute><TemplateLibrary /></ProtectedRoute>} />
+        <Route path="/templates/:templateId" element={<ProtectedRoute><TemplateDetail /></ProtectedRoute>} />
+        <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+        <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />
+        <Route path="/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
+        <Route path="/scheduled-backups" element={<ProtectedRoute><ScheduledBackups /></ProtectedRoute>} />
+        <Route path="/git-configs" element={<ProtectedRoute><GitConfigs /></ProtectedRoute>} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ToastContainer />
+    </BrowserRouter>
+  );
 }
