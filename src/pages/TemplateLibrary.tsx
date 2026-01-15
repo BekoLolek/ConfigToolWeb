@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTemplateStore } from '../stores/templateStore';
 import { useAuthStore } from '../stores/authStore';
 import { templateApi } from '../api/endpoints';
 import { Template, CreateTemplateRequest } from '../types';
-import ThemeToggle from '../components/ThemeToggle';
 
 // Icon components
 function SearchIcon({ className = '' }: { className?: string }) {
@@ -423,9 +422,8 @@ function DeleteConfirmModal({
 }
 
 export default function TemplateLibrary() {
-  const { user, logout, refreshToken } = useAuthStore();
+  const { user } = useAuthStore();
   const { categories, fetchCategories, deleteTemplate } = useTemplateStore();
-  const navigate = useNavigate();
 
   // Local state for user templates (separate from marketplace store)
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -531,48 +529,9 @@ export default function TemplateLibrary() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLogout = async () => {
-    if (refreshToken) {
-      await import('../api/endpoints').then(m => m.authApi.logout(refreshToken)).catch(() => {});
-    }
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid">
-      {/* Navigation Header */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded border border-cyber-500/30 bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
-                <svg className="w-4 h-4 text-cyber-500 dark:text-cyber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-              </div>
-              <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white">
-                CONFIG<span className="text-cyber-500 dark:text-cyber-400">TOOL</span>
-              </span>
-            </Link>
-
-            {/* Actions */}
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              {user && (
-                <>
-                  <Link to="/" className="btn btn-ghost text-xs">Dashboard</Link>
-                  <Link to="/marketplace" className="btn btn-ghost text-xs">Marketplace</Link>
-                  <button onClick={handleLogout} className="btn btn-ghost text-xs">Logout</button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center justify-between">
@@ -882,16 +841,7 @@ export default function TemplateLibrary() {
             </button>
           </div>
         )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-sm text-slate-500 font-mono">
-            ConfigTool Template Library
-          </p>
-        </div>
-      </footer>
+      </div>
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editTemplate) && (

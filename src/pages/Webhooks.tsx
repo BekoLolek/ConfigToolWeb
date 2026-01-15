@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { webhookApi } from '../api/endpoints';
-import ThemeToggle from '../components/ThemeToggle';
 import type { Webhook, WebhookType, WebhookEventType, CreateWebhookRequest } from '../types';
 
 const WEBHOOK_TYPES: { value: WebhookType; label: string; icon: string }[] = [
@@ -113,8 +111,7 @@ function getTypeIcon(type: WebhookType): JSX.Element {
 }
 
 export default function Webhooks() {
-  const { user, logout, refreshToken } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,14 +133,6 @@ export default function Webhooks() {
 
   // Get organization ID from user profile
   const orgId = user?.defaultOrganizationId || '';
-
-  const handleLogout = async () => {
-    if (refreshToken) {
-      await import('../api/endpoints').then(m => m.authApi.logout(refreshToken)).catch(() => {});
-    }
-    logout();
-    navigate('/login');
-  };
 
   const fetchWebhooks = async () => {
     if (!orgId) return;
@@ -274,45 +263,14 @@ export default function Webhooks() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid">
-      {/* Navigation */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded border border-cyber-500/30 bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
-                <svg className="w-4 h-4 text-cyber-500 dark:text-cyber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-              </div>
-              <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white">
-                CONFIG<span className="text-cyber-500 dark:text-cyber-400">TOOL</span>
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Link to="/" className="btn btn-ghost text-xs">Dashboard</Link>
-              <button onClick={handleLogout} className="btn btn-ghost text-xs">Logout</button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Link to="/" className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-wide">
-                Webhooks
-              </h1>
-            </div>
+            <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-wide mb-2">
+              Webhooks
+            </h1>
             <p className="text-slate-500 font-mono text-sm uppercase tracking-wider">
               Get notified when events happen in your organization
             </p>
@@ -488,7 +446,7 @@ export default function Webhooks() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Create/Edit Webhook Modal */}
       {showModal && (

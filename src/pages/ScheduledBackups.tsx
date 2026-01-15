@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { scheduledBackupApi, serverApi } from '../api/endpoints';
-import ThemeToggle from '../components/ThemeToggle';
 import type { ScheduledBackup, CreateScheduledBackupRequest, ServerListItem, BackupStatus } from '../types';
 
 const CRON_PRESETS = [
@@ -75,8 +73,7 @@ function getStatusBgColor(status: BackupStatus): string {
 }
 
 export default function ScheduledBackups() {
-  const { user, logout, refreshToken } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const [backups, setBackups] = useState<ScheduledBackup[]>([]);
   const [servers, setServers] = useState<ServerListItem[]>([]);
@@ -97,14 +94,6 @@ export default function ScheduledBackups() {
   const [formEnabled, setFormEnabled] = useState(true);
 
   const orgId = user?.defaultOrganizationId || '';
-
-  const handleLogout = async () => {
-    if (refreshToken) {
-      await import('../api/endpoints').then(m => m.authApi.logout(refreshToken)).catch(() => {});
-    }
-    logout();
-    navigate('/login');
-  };
 
   const fetchData = async () => {
     if (!orgId) return;
@@ -222,46 +211,15 @@ export default function ScheduledBackups() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid">
-      {/* Navigation */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded border border-cyber-500/30 bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
-                <svg className="w-4 h-4 text-cyber-500 dark:text-cyber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-              </div>
-              <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white">
-                CONFIG<span className="text-cyber-500 dark:text-cyber-400">TOOL</span>
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Link to="/" className="btn btn-ghost text-xs">Dashboard</Link>
-              <button onClick={handleLogout} className="btn btn-ghost text-xs">Logout</button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Link to="/" className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-wide">
-                Scheduled Backups
-              </h1>
-            </div>
-            <p className="text-slate-500 font-mono text-sm uppercase tracking-wider">
+            <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-wide">
+              Scheduled Backups
+            </h1>
+            <p className="text-slate-500 font-mono text-sm uppercase tracking-wider mt-2">
               Automatic config file versioning on a schedule
             </p>
           </div>
@@ -447,162 +405,162 @@ export default function ScheduledBackups() {
             </div>
           </div>
         </div>
-      </main>
 
-      {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="relative w-full max-w-lg mx-4 animate-slide-up max-h-[90vh] overflow-y-auto">
-            <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />
-            <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-cyber-500" />
-            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-cyber-500" />
-            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-cyber-500" />
+        {/* Create/Edit Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+            <div className="relative w-full max-w-lg mx-4 animate-slide-up max-h-[90vh] overflow-y-auto">
+              <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />
+              <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-cyber-500" />
+              <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-cyber-500" />
+              <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-cyber-500" />
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
 
-              <div className="p-6">
-                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-4">
-                  {editingBackup ? 'Edit Backup Schedule' : 'Create Backup Schedule'}
-                </h3>
+                <div className="p-6">
+                  <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-4">
+                    {editingBackup ? 'Edit Backup Schedule' : 'Create Backup Schedule'}
+                  </h3>
 
-                <div className="space-y-4">
-                  {/* Server Selection */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
-                      Server
-                    </label>
-                    <select
-                      value={formServerId}
-                      onChange={(e) => setFormServerId(e.target.value)}
-                      className="input"
-                    >
-                      <option value="">Select a server...</option>
-                      {servers.map(server => (
-                        <option key={server.id} value={server.id}>
-                          {server.name} {server.online ? '(Online)' : '(Offline)'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Name */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
-                      Backup Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      placeholder="Daily Config Backup"
-                      className="input"
-                    />
-                  </div>
-
-                  {/* Schedule Preset */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
-                      Schedule
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {CRON_PRESETS.map(preset => (
-                        <button
-                          key={preset.value}
-                          type="button"
-                          onClick={() => setFormCronPreset(preset.value)}
-                          className={`p-3 rounded-lg border text-left transition-colors ${
-                            formCronPreset === preset.value
-                              ? 'border-cyber-500 bg-cyber-500/10'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                          }`}
-                        >
-                          <p className={`text-sm font-medium ${
-                            formCronPreset === preset.value ? 'text-cyber-600 dark:text-cyber-400' : 'text-slate-900 dark:text-white'
-                          }`}>
-                            {preset.label}
-                          </p>
-                          <p className="text-2xs text-slate-500 mt-0.5">{preset.description}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom Cron */}
-                  {formCronPreset === 'custom' && (
+                  <div className="space-y-4">
+                    {/* Server Selection */}
                     <div>
                       <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
-                        Cron Expression
+                        Server
+                      </label>
+                      <select
+                        value={formServerId}
+                        onChange={(e) => setFormServerId(e.target.value)}
+                        className="input"
+                      >
+                        <option value="">Select a server...</option>
+                        {servers.map(server => (
+                          <option key={server.id} value={server.id}>
+                            {server.name} {server.online ? '(Online)' : '(Offline)'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Name */}
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
+                        Backup Name
                       </label>
                       <input
                         type="text"
-                        value={formCustomCron}
-                        onChange={(e) => setFormCustomCron(e.target.value)}
-                        placeholder="0 0 * * *"
-                        className="input font-mono"
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        placeholder="Daily Config Backup"
+                        className="input"
                       />
-                      <p className="text-2xs text-slate-500 mt-1">
-                        Format: minute hour day month weekday (UTC)
-                      </p>
                     </div>
-                  )}
 
-                  {/* Retention Days */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
-                      Retention Period
+                    {/* Schedule Preset */}
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
+                        Schedule
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CRON_PRESETS.map(preset => (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => setFormCronPreset(preset.value)}
+                            className={`p-3 rounded-lg border text-left transition-colors ${
+                              formCronPreset === preset.value
+                                ? 'border-cyber-500 bg-cyber-500/10'
+                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                          >
+                            <p className={`text-sm font-medium ${
+                              formCronPreset === preset.value ? 'text-cyber-600 dark:text-cyber-400' : 'text-slate-900 dark:text-white'
+                            }`}>
+                              {preset.label}
+                            </p>
+                            <p className="text-2xs text-slate-500 mt-0.5">{preset.description}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Cron */}
+                    {formCronPreset === 'custom' && (
+                      <div>
+                        <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
+                          Cron Expression
+                        </label>
+                        <input
+                          type="text"
+                          value={formCustomCron}
+                          onChange={(e) => setFormCustomCron(e.target.value)}
+                          placeholder="0 0 * * *"
+                          className="input font-mono"
+                        />
+                        <p className="text-2xs text-slate-500 mt-1">
+                          Format: minute hour day month weekday (UTC)
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Retention Days */}
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
+                        Retention Period
+                      </label>
+                      <select
+                        value={formRetentionDays}
+                        onChange={(e) => setFormRetentionDays(Number(e.target.value))}
+                        className="input"
+                      >
+                        <option value={7}>7 days</option>
+                        <option value={14}>14 days</option>
+                        <option value={30}>30 days</option>
+                        <option value={60}>60 days</option>
+                        <option value={90}>90 days</option>
+                      </select>
+                    </div>
+
+                    {/* Enabled Toggle */}
+                    <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formEnabled}
+                        onChange={(e) => setFormEnabled(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-cyber-500 focus:ring-cyber-500"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Enable immediately</p>
+                        <p className="text-xs text-slate-500">Start running backups on this schedule</p>
+                      </div>
                     </label>
-                    <select
-                      value={formRetentionDays}
-                      onChange={(e) => setFormRetentionDays(Number(e.target.value))}
-                      className="input"
-                    >
-                      <option value={7}>7 days</option>
-                      <option value={14}>14 days</option>
-                      <option value={30}>30 days</option>
-                      <option value={60}>60 days</option>
-                      <option value={90}>90 days</option>
-                    </select>
                   </div>
 
-                  {/* Enabled Toggle */}
-                  <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formEnabled}
-                      onChange={(e) => setFormEnabled(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-cyber-500 focus:ring-cyber-500"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">Enable immediately</p>
-                      <p className="text-xs text-slate-500">Start running backups on this schedule</p>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="flex-1 btn btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={!formServerId || !formName.trim() || !getCronExpression() || saving}
-                    className="flex-1 btn btn-primary"
-                  >
-                    {saving ? 'Saving...' : editingBackup ? 'Save Changes' : 'Create Schedule'}
-                  </button>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowModal(false);
+                        resetForm();
+                      }}
+                      className="flex-1 btn btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={!formServerId || !formName.trim() || !getCronExpression() || saving}
+                      className="flex-1 btn btn-primary"
+                    >
+                      {saving ? 'Saving...' : editingBackup ? 'Save Changes' : 'Create Schedule'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
