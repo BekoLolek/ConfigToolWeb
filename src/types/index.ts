@@ -1,4 +1,4 @@
-export interface User { id: string; email: string; emailVerified: boolean; createdAt: string; }
+export interface User { id: string; email: string; emailVerified: boolean; createdAt: string; defaultOrganizationId?: string; }
 export interface AuthResponse { accessToken: string; refreshToken: string; expiresIn: number; user: User; }
 export interface Server { id: string; name: string; token: string; online: boolean; lastSeenAt: string | null; createdAt: string; groupName: string | null; notes: string | null; totalConnections: number; totalFileEdits: number; lastFileEditAt: string | null; }
 export interface ServerListItem { id: string; name: string; online: boolean; lastSeenAt: string | null; groupName: string | null; }
