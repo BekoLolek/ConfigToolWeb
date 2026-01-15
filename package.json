@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build:staging": "tsc && vite build --mode staging",
+    "build:production": "tsc && vite build --mode production",
+    "preview": "vite preview",
+    "preview:staging": "vite preview --mode staging"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
