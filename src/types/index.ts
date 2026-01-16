@@ -50,7 +50,7 @@ export interface FileChange {
 
 // Billing types
 export type Plan = 'FREE' | 'PRO' | 'TEAM' | 'ENTERPRISE';
-export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'TRIALING';
+export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'TRIALING' | 'TRIAL_EXPIRED';
 export type InvoiceStatus = 'DRAFT' | 'OPEN' | 'PAID' | 'VOID' | 'UNCOLLECTIBLE';
 
 export interface PlanPricing {
@@ -75,6 +75,9 @@ export interface Subscription {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   createdAt: string;
+  isTrialing: boolean;
+  trialDaysRemaining: number | null;
+  trialHoursRemaining: number | null;
 }
 
 export interface Invoice {
@@ -342,4 +345,28 @@ export interface PageResponse<T> {
   number: number;
   first: boolean;
   last: boolean;
+}
+
+// File Permission types
+export type RestrictionType = 'READ_DENIED' | 'WRITE_DENIED';
+
+export interface FileRestriction {
+  id: string;
+  serverId: string;
+  collaboratorUserId: string;
+  collaboratorEmail: string;
+  pathPattern: string;
+  restrictionType: RestrictionType;
+  createdAt: string;
+}
+
+export interface CreateFileRestrictionRequest {
+  collaboratorUserId: string;
+  pathPattern: string;
+  restrictionType: RestrictionType;
+}
+
+export interface PathPermissions {
+  canRead: boolean;
+  canWrite: boolean;
 }

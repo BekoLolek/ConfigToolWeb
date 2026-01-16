@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions } from '../types';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -217,4 +217,31 @@ export const categoryApi = {
 
   getBySlug: (slug: string) =>
     api.get<TemplateCategory>(`/api/marketplace/categories/slug/${slug}`),
+};
+
+// File Permissions API
+export const filePermissionApi = {
+  // Get all restrictions for a server (owner only)
+  list: (serverId: string) =>
+    api.get<FileRestriction[]>(`/api/servers/${serverId}/file-permissions`),
+
+  // Get restrictions for a specific collaborator (owner only)
+  getForCollaborator: (serverId: string, userId: string) =>
+    api.get<FileRestriction[]>(`/api/servers/${serverId}/file-permissions/collaborators/${userId}`),
+
+  // Get current user's restrictions on a server
+  getMyRestrictions: (serverId: string) =>
+    api.get<FileRestriction[]>(`/api/servers/${serverId}/file-permissions/my-restrictions`),
+
+  // Add a restriction (owner only)
+  add: (serverId: string, data: CreateFileRestrictionRequest) =>
+    api.post<FileRestriction>(`/api/servers/${serverId}/file-permissions`, data),
+
+  // Remove a restriction (owner only)
+  remove: (serverId: string, restrictionId: string) =>
+    api.delete(`/api/servers/${serverId}/file-permissions/${restrictionId}`),
+
+  // Check current user's access to a specific path
+  checkAccess: (serverId: string, path: string) =>
+    api.get<PathPermissions>(`/api/servers/${serverId}/file-permissions/check`, { params: { path } }),
 };

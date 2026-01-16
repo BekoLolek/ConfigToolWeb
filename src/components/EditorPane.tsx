@@ -241,7 +241,7 @@ export default function EditorPane({ paneIndex }: Props) {
   };
 
   const handleSave = useCallback(async () => {
-    if (!tab || !hasChanges || saving) return;
+    if (!tab || !hasChanges || saving || tab.readOnly) return;
     setSaving(true);
     setError(null);
     setShowSave(false);
@@ -264,7 +264,7 @@ export default function EditorPane({ paneIndex }: Props) {
 
   // Quick save without showing modal
   const handleQuickSave = useCallback(async (withReload: boolean) => {
-    if (!tab || !hasChanges || saving) return;
+    if (!tab || !hasChanges || saving || tab.readOnly) return;
     setSaving(true);
     setError(null);
     setShowSaveDropdown(false);
@@ -316,13 +316,13 @@ export default function EditorPane({ paneIndex }: Props) {
       // Ctrl+Shift+S: Save without reload
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        if (hasChanges && !saving) handleQuickSave(false);
+        if (hasChanges && !saving && !tab?.readOnly) handleQuickSave(false);
         return;
       }
       // Ctrl+S: Save with reload
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (hasChanges && !saving) handleQuickSave(true);
+        if (hasChanges && !saving && !tab?.readOnly) handleQuickSave(true);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
         e.preventDefault();
@@ -332,7 +332,7 @@ export default function EditorPane({ paneIndex }: Props) {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isActivePane, hasChanges, saving, activeTabId, handleQuickSave]);
+  }, [isActivePane, hasChanges, saving, activeTabId, handleQuickSave, tab?.readOnly]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -454,7 +454,16 @@ export default function EditorPane({ paneIndex }: Props) {
           <div className="flex items-center justify-between px-4 py-2 bg-slate-900/50 border-b border-slate-800">
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-xs font-mono text-slate-500 truncate">{tab.filePath}</span>
-              {hasChanges && (
+              {/* Read Only badge */}
+              {tab.readOnly && (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-xs font-mono uppercase tracking-wider flex-shrink-0 border border-amber-500/30">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Read Only
+                </span>
+              )}
+              {hasChanges && !tab.readOnly && (
                 <span className="flex items-center gap-1.5 text-status-warning text-xs font-mono uppercase tracking-wider flex-shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-status-warning animate-pulse" />
                   Modified
@@ -509,7 +518,7 @@ export default function EditorPane({ paneIndex }: Props) {
                 </button>
               )}
             </div>
-            {hasChanges && (
+            {hasChanges && !tab.readOnly && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={handleDiscard}
@@ -778,7 +787,7 @@ export default function EditorPane({ paneIndex }: Props) {
                 height="100%"
                 language={tab.filePath.endsWith('.json') ? 'json' : 'yaml'}
                 value={tab.content}
-                onChange={v => updateContent(tab.id, v || '')}
+                onChange={v => !tab.readOnly && updateContent(tab.id, v || '')}
                 onMount={handleEditorMount}
                 theme="vs-dark"
                 options={{
@@ -794,6 +803,7 @@ export default function EditorPane({ paneIndex }: Props) {
                   padding: { top: 12, bottom: 12 },
                   cursorBlinking: 'smooth',
                   smoothScrolling: true,
+                  readOnly: tab.readOnly,
                 }}
               />
             </div>
