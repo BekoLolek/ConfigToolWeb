@@ -174,12 +174,12 @@ export default function VersionHistory({ serverId, filePath, onRestore }: Props)
         />
       )}
 
-      {/* Panel header */}
-      <div className="panel-header flex items-center gap-2 flex-shrink-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <svg className="w-4 h-4 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {/* Panel header - h-16 matches main header */}
+      <div className="h-16 px-3 flex items-center gap-2 flex-shrink-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <svg className="w-4 h-4 text-cyber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>Version History</span>
+        <span className="font-display font-semibold text-sm uppercase tracking-wider text-slate-600 dark:text-slate-400">History</span>
         <span className="text-2xs bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">{versions.length}</span>
 
         {/* Compare mode toggle */}
