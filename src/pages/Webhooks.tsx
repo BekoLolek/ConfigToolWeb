@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { webhookApi } from '../api/endpoints';
 import type { Webhook, WebhookType, WebhookEventType, CreateWebhookRequest } from '../types';
 
@@ -111,8 +110,6 @@ function getTypeIcon(type: WebhookType): JSX.Element {
 }
 
 export default function Webhooks() {
-  const { user } = useAuthStore();
-
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,15 +128,11 @@ export default function Webhooks() {
   const [formEvents, setFormEvents] = useState<WebhookEventType[]>([]);
   const [formSecretToken, setFormSecretToken] = useState('');
 
-  // Get organization ID from user profile
-  const orgId = user?.defaultOrganizationId || '';
-
   const fetchWebhooks = async () => {
-    if (!orgId) return;
     setLoading(true);
     setError(null);
     try {
-      const { data } = await webhookApi.list(orgId);
+      const { data } = await webhookApi.list();
       setWebhooks(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load webhooks');
@@ -150,7 +143,7 @@ export default function Webhooks() {
 
   useEffect(() => {
     fetchWebhooks();
-  }, [orgId]);
+  }, []);
 
   const resetForm = () => {
     setFormName('');
@@ -177,7 +170,7 @@ export default function Webhooks() {
   };
 
   const handleSave = async () => {
-    if (!formName.trim() || !formUrl.trim() || formEvents.length === 0 || !orgId) return;
+    if (!formName.trim() || !formUrl.trim() || formEvents.length === 0) return;
     setSaving(true);
     setError(null);
     try {
@@ -190,10 +183,10 @@ export default function Webhooks() {
       };
 
       if (editingWebhook) {
-        const { data } = await webhookApi.update(orgId, editingWebhook.id, request);
+        const { data } = await webhookApi.update(editingWebhook.id, request);
         setWebhooks(prev => prev.map(w => w.id === data.id ? data : w));
       } else {
-        const { data } = await webhookApi.create(orgId, request);
+        const { data } = await webhookApi.create(request);
         setWebhooks(prev => [data, ...prev]);
       }
       setShowModal(false);
@@ -206,10 +199,9 @@ export default function Webhooks() {
   };
 
   const handleDelete = async (webhookId: number) => {
-    if (!orgId) return;
     setDeleting(webhookId);
     try {
-      await webhookApi.delete(orgId, webhookId);
+      await webhookApi.delete(webhookId);
       setWebhooks(prev => prev.filter(w => w.id !== webhookId));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete webhook');
@@ -219,10 +211,9 @@ export default function Webhooks() {
   };
 
   const handleToggle = async (webhook: Webhook) => {
-    if (!orgId) return;
     setToggling(webhook.id);
     try {
-      await webhookApi.toggle(orgId, webhook.id, !webhook.active);
+      await webhookApi.toggle(webhook.id, !webhook.active);
       setWebhooks(prev => prev.map(w => w.id === webhook.id ? { ...w, active: !w.active } : w));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to toggle webhook');
@@ -232,11 +223,10 @@ export default function Webhooks() {
   };
 
   const handleTest = async (webhookId: number) => {
-    if (!orgId) return;
     setTesting(webhookId);
     setTestResult(null);
     try {
-      await webhookApi.test(orgId, webhookId);
+      await webhookApi.test(webhookId);
       setTestResult({ id: webhookId, success: true, message: 'Test webhook sent successfully!' });
     } catch (err: any) {
       setTestResult({ id: webhookId, success: false, message: err.response?.data?.message || 'Test failed' });

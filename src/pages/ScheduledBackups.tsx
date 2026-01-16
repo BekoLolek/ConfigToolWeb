@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { scheduledBackupApi, serverApi } from '../api/endpoints';
 import type { ScheduledBackup, CreateScheduledBackupRequest, ServerListItem, BackupStatus } from '../types';
 
@@ -73,8 +72,6 @@ function getStatusBgColor(status: BackupStatus): string {
 }
 
 export default function ScheduledBackups() {
-  const { user } = useAuthStore();
-
   const [backups, setBackups] = useState<ScheduledBackup[]>([]);
   const [servers, setServers] = useState<ServerListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,15 +90,12 @@ export default function ScheduledBackups() {
   const [formRetentionDays, setFormRetentionDays] = useState(7);
   const [formEnabled, setFormEnabled] = useState(true);
 
-  const orgId = user?.defaultOrganizationId || '';
-
   const fetchData = async () => {
-    if (!orgId) return;
     setLoading(true);
     setError(null);
     try {
       const [backupsRes, serversRes] = await Promise.all([
-        scheduledBackupApi.list(orgId),
+        scheduledBackupApi.list(),
         serverApi.list(),
       ]);
       setBackups(backupsRes.data);
@@ -115,7 +109,7 @@ export default function ScheduledBackups() {
 
   useEffect(() => {
     fetchData();
-  }, [orgId]);
+  }, []);
 
   const resetForm = () => {
     setFormServerId('');
@@ -155,7 +149,7 @@ export default function ScheduledBackups() {
 
   const handleSave = async () => {
     const cronExpression = getCronExpression();
-    if (!formServerId || !formName.trim() || !cronExpression || !orgId) return;
+    if (!formServerId || !formName.trim() || !cronExpression) return;
 
     setSaving(true);
     setError(null);
@@ -169,10 +163,10 @@ export default function ScheduledBackups() {
       };
 
       if (editingBackup) {
-        const { data } = await scheduledBackupApi.update(orgId, editingBackup.id, request);
+        const { data } = await scheduledBackupApi.update(editingBackup.id, request);
         setBackups(prev => prev.map(b => b.id === data.id ? data : b));
       } else {
-        const { data } = await scheduledBackupApi.create(orgId, request);
+        const { data } = await scheduledBackupApi.create(request);
         setBackups(prev => [data, ...prev]);
       }
       setShowModal(false);
@@ -185,10 +179,9 @@ export default function ScheduledBackups() {
   };
 
   const handleDelete = async (backupId: number) => {
-    if (!orgId) return;
     setDeleting(backupId);
     try {
-      await scheduledBackupApi.delete(orgId, backupId);
+      await scheduledBackupApi.delete(backupId);
       setBackups(prev => prev.filter(b => b.id !== backupId));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete backup schedule');
@@ -198,10 +191,9 @@ export default function ScheduledBackups() {
   };
 
   const handleToggle = async (backup: ScheduledBackup) => {
-    if (!orgId) return;
     setToggling(backup.id);
     try {
-      await scheduledBackupApi.toggle(orgId, backup.id, !backup.enabled);
+      await scheduledBackupApi.toggle(backup.id, !backup.enabled);
       setBackups(prev => prev.map(b => b.id === backup.id ? { ...b, enabled: !b.enabled } : b));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to toggle backup schedule');

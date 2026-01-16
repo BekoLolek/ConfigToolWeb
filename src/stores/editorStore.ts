@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { fileApi } from '../api/endpoints';
+import { fileApi, filePermissionApi } from '../api/endpoints';
 
 export interface Tab {
   id: string;
@@ -12,6 +12,7 @@ export interface Tab {
   isLoading: boolean;
   error: string | null;
   lastSaved: number | null;
+  readOnly: boolean;
 }
 
 export interface RecentFile {
@@ -122,6 +123,7 @@ export const useEditorStore = create<EditorState>()(
           isLoading: true,
           error: null,
           lastSaved: null,
+          readOnly: false,
         };
 
         set(state => ({
@@ -133,13 +135,19 @@ export const useEditorStore = create<EditorState>()(
           ),
         }));
 
-        // Fetch content
+        // Fetch content and check permissions in parallel
         try {
-          const res = await fileApi.getContent(serverId, filePath);
+          const [contentRes, permissionsRes] = await Promise.all([
+            fileApi.getContent(serverId, filePath),
+            filePermissionApi.checkAccess(serverId, filePath).catch(() => ({ data: { canRead: true, canWrite: true } })),
+          ]);
+
+          const isReadOnly = !permissionsRes.data.canWrite;
+
           set(state => ({
             tabs: state.tabs.map(t =>
               t.id === tabId
-                ? { ...t, content: res.data.content, originalContent: res.data.content, isLoading: false }
+                ? { ...t, content: contentRes.data.content, originalContent: contentRes.data.content, isLoading: false, readOnly: isReadOnly }
                 : t
             ),
           }));
@@ -230,11 +238,17 @@ export const useEditorStore = create<EditorState>()(
         }));
 
         try {
-          const res = await fileApi.getContent(tab.serverId, tab.filePath);
+          const [contentRes, permissionsRes] = await Promise.all([
+            fileApi.getContent(tab.serverId, tab.filePath),
+            filePermissionApi.checkAccess(tab.serverId, tab.filePath).catch(() => ({ data: { canRead: true, canWrite: true } })),
+          ]);
+
+          const isReadOnly = !permissionsRes.data.canWrite;
+
           set(state => ({
             tabs: state.tabs.map(t =>
               t.id === tabId
-                ? { ...t, content: res.data.content, originalContent: res.data.content, isLoading: false }
+                ? { ...t, content: contentRes.data.content, originalContent: contentRes.data.content, isLoading: false, readOnly: isReadOnly }
                 : t
             ),
           }));
@@ -294,7 +308,7 @@ export const useEditorStore = create<EditorState>()(
       saveAllTabs: async (serverId, reload = false) => {
         const { tabs } = get();
         const unsavedTabs = tabs.filter(
-          t => t.serverId === serverId && t.content !== t.originalContent
+          t => t.serverId === serverId && t.content !== t.originalContent && !t.readOnly
         );
 
         const success: string[] = [];
@@ -382,11 +396,11 @@ export const useEditorStore = create<EditorState>()(
       },
 
       hasUnsavedChanges: () => {
-        return get().tabs.some(t => t.content !== t.originalContent);
+        return get().tabs.some(t => t.content !== t.originalContent && !t.readOnly);
       },
 
       getUnsavedTabs: () => {
-        return get().tabs.filter(t => t.content !== t.originalContent);
+        return get().tabs.filter(t => t.content !== t.originalContent && !t.readOnly);
       },
     }),
     {

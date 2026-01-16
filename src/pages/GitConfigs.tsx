@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { gitConfigApi, serverApi } from '../api/endpoints';
 import type { GitConfig, CreateGitConfigRequest, ServerListItem, GitSyncStatus } from '../types';
 
@@ -89,8 +88,6 @@ function getRepoProvider(url: string): { name: string; icon: JSX.Element } {
 }
 
 export default function GitConfigs() {
-  const { user } = useAuthStore();
-
   const [configs, setConfigs] = useState<GitConfig[]>([]);
   const [servers, setServers] = useState<ServerListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,15 +107,12 @@ export default function GitConfigs() {
   const [formDirectoryPath, setFormDirectoryPath] = useState('');
   const [formAuthToken, setFormAuthToken] = useState('');
 
-  const orgId = user?.defaultOrganizationId || '';
-
   const fetchData = async () => {
-    if (!orgId) return;
     setLoading(true);
     setError(null);
     try {
       const [configsRes, serversRes] = await Promise.all([
-        gitConfigApi.list(orgId),
+        gitConfigApi.list(),
         serverApi.list(),
       ]);
       setConfigs(configsRes.data);
@@ -132,7 +126,7 @@ export default function GitConfigs() {
 
   useEffect(() => {
     fetchData();
-  }, [orgId]);
+  }, []);
 
   const resetForm = () => {
     setFormServerId('');
@@ -159,7 +153,7 @@ export default function GitConfigs() {
   };
 
   const handleSave = async () => {
-    if (!formRepositoryUrl.trim() || !formBranch.trim() || !orgId) return;
+    if (!formRepositoryUrl.trim() || !formBranch.trim()) return;
 
     setSaving(true);
     setError(null);
@@ -173,10 +167,10 @@ export default function GitConfigs() {
       };
 
       if (editingConfig) {
-        const { data } = await gitConfigApi.update(orgId, editingConfig.id, request);
+        const { data } = await gitConfigApi.update(editingConfig.id, request);
         setConfigs(prev => prev.map(c => c.id === data.id ? data : c));
       } else {
-        const { data } = await gitConfigApi.create(orgId, request);
+        const { data } = await gitConfigApi.create(request);
         setConfigs(prev => [data, ...prev]);
       }
       setShowModal(false);
@@ -189,10 +183,9 @@ export default function GitConfigs() {
   };
 
   const handleDelete = async (configId: number) => {
-    if (!orgId) return;
     setDeleting(configId);
     try {
-      await gitConfigApi.delete(orgId, configId);
+      await gitConfigApi.delete(configId);
       setConfigs(prev => prev.filter(c => c.id !== configId));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete Git configuration');
@@ -202,10 +195,9 @@ export default function GitConfigs() {
   };
 
   const handleToggle = async (config: GitConfig) => {
-    if (!orgId) return;
     setToggling(config.id);
     try {
-      await gitConfigApi.toggle(orgId, config.id, !config.enabled);
+      await gitConfigApi.toggle(config.id, !config.enabled);
       setConfigs(prev => prev.map(c => c.id === config.id ? { ...c, enabled: !c.enabled } : c));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to toggle Git configuration');
@@ -215,12 +207,11 @@ export default function GitConfigs() {
   };
 
   const handleSync = async (configId: number) => {
-    if (!orgId) return;
     setSyncing(configId);
     setError(null);
     setSuccess(null);
     try {
-      const { data } = await gitConfigApi.sync(orgId, configId);
+      const { data } = await gitConfigApi.sync(configId);
       setConfigs(prev => prev.map(c => c.id === data.id ? data : c));
       if (data.lastSyncStatus === 'SUCCESS') {
         setSuccess('Sync completed successfully!');

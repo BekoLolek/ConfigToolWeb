@@ -20,23 +20,23 @@ interface BillingState {
   // Error state
   error: string | null;
 
-  // Actions
+  // Actions (no orgId parameters)
   fetchPricing: () => Promise<void>;
-  fetchSubscription: (orgId: string) => Promise<void>;
-  fetchInvoices: (orgId: string) => Promise<void>;
-  fetchPaymentMethods: (orgId: string) => Promise<void>;
-  fetchUsage: (orgId: string) => Promise<void>;
-  fetchAll: (orgId: string) => Promise<void>;
+  fetchSubscription: () => Promise<void>;
+  fetchInvoices: () => Promise<void>;
+  fetchPaymentMethods: () => Promise<void>;
+  fetchUsage: () => Promise<void>;
+  fetchAll: () => Promise<void>;
 
-  createSubscription: (orgId: string, plan: Plan, paymentMethodId: string, billingCycle: 'monthly' | 'yearly') => Promise<Subscription>;
-  cancelSubscription: (orgId: string) => Promise<void>;
-  resumeSubscription: (orgId: string) => Promise<void>;
+  createSubscription: (plan: Plan, paymentMethodId: string, billingCycle: 'monthly' | 'yearly') => Promise<Subscription>;
+  cancelSubscription: () => Promise<void>;
+  resumeSubscription: () => Promise<void>;
 
-  addPaymentMethod: (orgId: string, paymentMethodId: string, setAsDefault?: boolean) => Promise<PaymentMethod>;
-  removePaymentMethod: (orgId: string, paymentMethodId: string) => Promise<void>;
-  setDefaultPaymentMethod: (orgId: string, paymentMethodId: string) => Promise<void>;
+  addPaymentMethod: (paymentMethodId: string, setAsDefault?: boolean) => Promise<PaymentMethod>;
+  removePaymentMethod: (paymentMethodId: string) => Promise<void>;
+  setDefaultPaymentMethod: (paymentMethodId: string) => Promise<void>;
 
-  openBillingPortal: (orgId: string) => Promise<void>;
+  openBillingPortal: (returnUrl: string) => Promise<void>;
 
   clearError: () => void;
   reset: () => void;
@@ -72,10 +72,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  fetchSubscription: async (orgId: string) => {
+  fetchSubscription: async () => {
     set({ loadingSubscription: true, error: null });
     try {
-      const { data } = await billingApi.getSubscription(orgId);
+      const { data } = await billingApi.getSubscription();
       set({ subscription: data, loadingSubscription: false });
     } catch (err: any) {
       set({
@@ -85,10 +85,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  fetchInvoices: async (orgId: string) => {
+  fetchInvoices: async () => {
     set({ loadingInvoices: true, error: null });
     try {
-      const { data } = await billingApi.getInvoices(orgId);
+      const { data } = await billingApi.getInvoices();
       set({ invoices: data, loadingInvoices: false });
     } catch (err: any) {
       set({
@@ -98,10 +98,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  fetchPaymentMethods: async (orgId: string) => {
+  fetchPaymentMethods: async () => {
     set({ loadingPaymentMethods: true, error: null });
     try {
-      const { data } = await billingApi.getPaymentMethods(orgId);
+      const { data } = await billingApi.getPaymentMethods();
       set({ paymentMethods: data, loadingPaymentMethods: false });
     } catch (err: any) {
       set({
@@ -111,10 +111,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  fetchUsage: async (orgId: string) => {
+  fetchUsage: async () => {
     set({ loadingUsage: true, error: null });
     try {
-      const { data } = await billingApi.getUsage(orgId);
+      const { data } = await billingApi.getUsage();
       set({ usage: data, loadingUsage: false });
     } catch (err: any) {
       set({
@@ -124,21 +124,21 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  fetchAll: async (orgId: string) => {
+  fetchAll: async () => {
     const { fetchPricing, fetchSubscription, fetchInvoices, fetchPaymentMethods, fetchUsage } = get();
     await Promise.all([
       fetchPricing(),
-      fetchSubscription(orgId),
-      fetchInvoices(orgId),
-      fetchPaymentMethods(orgId),
-      fetchUsage(orgId),
+      fetchSubscription(),
+      fetchInvoices(),
+      fetchPaymentMethods(),
+      fetchUsage(),
     ]);
   },
 
-  createSubscription: async (orgId: string, plan: Plan, paymentMethodId: string, billingCycle: 'monthly' | 'yearly') => {
+  createSubscription: async (plan: Plan, paymentMethodId: string, billingCycle: 'monthly' | 'yearly') => {
     set({ loadingSubscription: true, error: null });
     try {
-      const { data } = await billingApi.createSubscription(orgId, plan, paymentMethodId, billingCycle);
+      const { data } = await billingApi.createSubscription({ plan, paymentMethodId, billingCycle });
       set({ subscription: data, loadingSubscription: false });
       return data;
     } catch (err: any) {
@@ -148,10 +148,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  cancelSubscription: async (orgId: string) => {
+  cancelSubscription: async () => {
     set({ loadingSubscription: true, error: null });
     try {
-      const { data } = await billingApi.cancelSubscription(orgId);
+      const { data } = await billingApi.cancelSubscription();
       set({ subscription: data, loadingSubscription: false });
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to cancel subscription';
@@ -160,10 +160,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  resumeSubscription: async (orgId: string) => {
+  resumeSubscription: async () => {
     set({ loadingSubscription: true, error: null });
     try {
-      const { data } = await billingApi.resumeSubscription(orgId);
+      const { data } = await billingApi.resumeSubscription();
       set({ subscription: data, loadingSubscription: false });
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to resume subscription';
@@ -172,10 +172,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  addPaymentMethod: async (orgId: string, paymentMethodId: string, setAsDefault = true) => {
+  addPaymentMethod: async (paymentMethodId: string, setAsDefault = true) => {
     set({ loadingPaymentMethods: true, error: null });
     try {
-      const { data } = await billingApi.addPaymentMethod(orgId, paymentMethodId, setAsDefault);
+      const { data } = await billingApi.addPaymentMethod({ paymentMethodId, setAsDefault });
       const currentMethods = get().paymentMethods;
       // If set as default, mark others as not default
       const updatedMethods = setAsDefault
@@ -193,10 +193,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  removePaymentMethod: async (orgId: string, paymentMethodId: string) => {
+  removePaymentMethod: async (paymentMethodId: string) => {
     set({ loadingPaymentMethods: true, error: null });
     try {
-      await billingApi.removePaymentMethod(orgId, paymentMethodId);
+      await billingApi.removePaymentMethod(paymentMethodId);
       const currentMethods = get().paymentMethods;
       set({
         paymentMethods: currentMethods.filter(m => m.id !== paymentMethodId),
@@ -209,10 +209,10 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  setDefaultPaymentMethod: async (orgId: string, paymentMethodId: string) => {
+  setDefaultPaymentMethod: async (paymentMethodId: string) => {
     set({ loadingPaymentMethods: true, error: null });
     try {
-      await billingApi.setDefaultPaymentMethod(orgId, paymentMethodId);
+      await billingApi.setDefaultPaymentMethod(paymentMethodId);
       const currentMethods = get().paymentMethods;
       set({
         paymentMethods: currentMethods.map(m => ({
@@ -228,10 +228,9 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     }
   },
 
-  openBillingPortal: async (orgId: string) => {
+  openBillingPortal: async (returnUrl: string) => {
     try {
-      const returnUrl = window.location.href;
-      const { data } = await billingApi.createBillingPortal(orgId, returnUrl);
+      const { data } = await billingApi.createPortalSession(returnUrl);
       window.location.href = data.url;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to open billing portal';

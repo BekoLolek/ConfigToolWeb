@@ -1,8 +1,38 @@
-export interface User { id: string; email: string; emailVerified: boolean; createdAt: string; defaultOrganizationId?: string; }
+export interface User { id: string; email: string; emailVerified: boolean; userType: 'OWNER' | 'COLLABORATOR'; createdAt: string; }
 export interface AuthResponse { accessToken: string; refreshToken: string; expiresIn: number; user: User; }
-export interface Server { id: string; name: string; token: string; online: boolean; lastSeenAt: string | null; createdAt: string; groupName: string | null; notes: string | null; totalConnections: number; totalFileEdits: number; lastFileEditAt: string | null; }
+export interface Server { id: string; name: string; token: string; online: boolean; lastSeenAt: string | null; createdAt: string; groupName: string | null; notes: string | null; totalConnections: number; totalFileEdits: number; lastFileEditAt: string | null; ownerId: string; }
 export interface ServerListItem { id: string; name: string; online: boolean; lastSeenAt: string | null; groupName: string | null; }
 export interface UpdateServerRequest { name?: string; groupName?: string; notes?: string; }
+
+// Server Collaborator types
+export interface ServerCollaborator {
+  id: string;
+  serverId: string;
+  userId: string;
+  email: string;
+  joinedAt: string;
+}
+
+export interface InviteCode {
+  id: string;
+  code: string;
+  createdAt: string;
+  expiresAt: string;
+  used: boolean;
+  usedAt: string | null;
+}
+
+export interface InviteCodeValidation {
+  valid: boolean;
+  serverName: string | null;
+  expiresAt: string | null;
+}
+
+export interface CollaboratorUsage {
+  currentCount: number;
+  maxCount: number;
+}
+
 export interface FileInfo { path: string; name: string; isDirectory: boolean; size: number; }
 export interface FileListResponse { files: FileInfo[]; total: number; offset: number; hasMore: boolean; }
 export interface FileContent { path: string; content: string; lastModified: string; }
@@ -20,7 +50,7 @@ export interface FileChange {
 
 // Billing types
 export type Plan = 'FREE' | 'PRO' | 'TEAM' | 'ENTERPRISE';
-export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'TRIALING';
+export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'TRIALING' | 'TRIAL_EXPIRED';
 export type InvoiceStatus = 'DRAFT' | 'OPEN' | 'PAID' | 'VOID' | 'UNCOLLECTIBLE';
 
 export interface PlanPricing {
@@ -37,7 +67,7 @@ export interface PlanPricing {
 
 export interface Subscription {
   id: string;
-  organizationId: string;
+  userId: string;
   plan: Plan;
   status: SubscriptionStatus;
   trialEndsAt: string | null;
@@ -45,6 +75,9 @@ export interface Subscription {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   createdAt: string;
+  isTrialing: boolean;
+  trialDaysRemaining: number | null;
+  trialHoursRemaining: number | null;
 }
 
 export interface Invoice {
@@ -96,9 +129,8 @@ export interface UserProfile {
   id: string;
   email: string;
   emailVerified: boolean;
+  userType: 'OWNER' | 'COLLABORATOR';
   createdAt: string;
-  defaultOrganizationId?: string;
-  defaultOrganizationName?: string;
 }
 
 // API Key types
@@ -223,7 +255,6 @@ export interface Template {
   fileName: string;
   authorId: string;
   authorEmail: string;
-  organizationId: string | null;
   categoryId: string | null;
   categoryName: string | null;
   isPublic: boolean;
@@ -314,4 +345,28 @@ export interface PageResponse<T> {
   number: number;
   first: boolean;
   last: boolean;
+}
+
+// File Permission types
+export type RestrictionType = 'READ_DENIED' | 'WRITE_DENIED';
+
+export interface FileRestriction {
+  id: string;
+  serverId: string;
+  collaboratorUserId: string;
+  collaboratorEmail: string;
+  pathPattern: string;
+  restrictionType: RestrictionType;
+  createdAt: string;
+}
+
+export interface CreateFileRestrictionRequest {
+  collaboratorUserId: string;
+  pathPattern: string;
+  restrictionType: RestrictionType;
+}
+
+export interface PathPermissions {
+  canRead: boolean;
+  canWrite: boolean;
 }

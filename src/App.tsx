@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import AppShell from './components/AppShell';
+import Landing from './pages/Landing';
+import Docs from './pages/Docs';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ServerView from './pages/ServerView';
@@ -26,6 +28,15 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Root route that shows landing page for unauthenticated users
+function RootRoute() {
+  const { isAuthenticated } = useAuthStore();
+  if (isAuthenticated) {
+    return <ProtectedRoute><Dashboard /></ProtectedRoute>;
+  }
+  return <Landing />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -33,9 +44,10 @@ export default function App() {
         {/* Public routes - no AppShell */}
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/pricing" element={<PublicRoute><Pricing /></PublicRoute>} />
+        <Route path="/docs" element={<PublicRoute><Docs /></PublicRoute>} />
 
-        {/* Protected routes - with AppShell */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        {/* Root route - Landing for unauthenticated, Dashboard for authenticated */}
+        <Route path="/" element={<RootRoute />} />
         <Route path="/servers/:serverId" element={<ProtectedRoute><ServerView /></ProtectedRoute>} />
         <Route path="/templates" element={<ProtectedRoute><TemplateLibrary /></ProtectedRoute>} />
         <Route path="/templates/:templateId" element={<ProtectedRoute><TemplateDetail /></ProtectedRoute>} />

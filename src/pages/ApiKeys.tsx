@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { apiKeyApi } from '../api/endpoints';
 import type { ApiKey, CreateApiKeyRequest } from '../types';
 
@@ -36,8 +35,6 @@ function formatRelativeTime(dateString: string | null): string {
 }
 
 export default function ApiKeys() {
-  const { user } = useAuthStore();
-
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,15 +49,11 @@ export default function ApiKeys() {
   const [selectedScopes, setSelectedScopes] = useState<string[]>(['servers:read', 'files:read']);
   const [expiresInDays, setExpiresInDays] = useState<number | undefined>(undefined);
 
-  // Get organization ID from user profile
-  const orgId = user?.defaultOrganizationId || '';
-
   const fetchKeys = async () => {
-    if (!orgId) return;
     setLoading(true);
     setError(null);
     try {
-      const { data } = await apiKeyApi.list(orgId);
+      const { data } = await apiKeyApi.list();
       setKeys(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load API keys');
@@ -71,10 +64,10 @@ export default function ApiKeys() {
 
   useEffect(() => {
     fetchKeys();
-  }, [orgId]);
+  }, []);
 
   const handleCreateKey = async () => {
-    if (!keyName.trim() || !orgId) return;
+    if (!keyName.trim()) return;
     setCreating(true);
     setError(null);
     try {
@@ -83,7 +76,7 @@ export default function ApiKeys() {
         scopes: selectedScopes,
         expiresInDays: expiresInDays,
       };
-      const { data } = await apiKeyApi.create(orgId, request);
+      const { data } = await apiKeyApi.create(request);
       setNewKey(data.key);
       setKeys(prev => [data.apiKey, ...prev]);
       setShowCreateModal(false);
@@ -99,10 +92,9 @@ export default function ApiKeys() {
   };
 
   const handleRevokeKey = async (keyId: number) => {
-    if (!orgId) return;
     setRevoking(keyId);
     try {
-      await apiKeyApi.revoke(orgId, keyId);
+      await apiKeyApi.revoke(keyId);
       setKeys(prev => prev.filter(k => k.id !== keyId));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to revoke API key');
