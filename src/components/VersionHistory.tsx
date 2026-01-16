@@ -160,7 +160,7 @@ export default function VersionHistory({ serverId, filePath, onRestore }: Props)
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Diff viewer modal */}
       {diffView && (
         <VersionDiffViewer
@@ -175,12 +175,12 @@ export default function VersionHistory({ serverId, filePath, onRestore }: Props)
       )}
 
       {/* Panel header */}
-      <div className="panel-header flex items-center gap-2 flex-shrink-0">
+      <div className="panel-header flex items-center gap-2 flex-shrink-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
         <svg className="w-4 h-4 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span>Version History</span>
-        <span className="text-2xs bg-slate-800 px-2 py-0.5 rounded-full">{versions.length}</span>
+        <span className="text-2xs bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">{versions.length}</span>
 
         {/* Compare mode toggle */}
         <button
@@ -189,7 +189,7 @@ export default function VersionHistory({ serverId, filePath, onRestore }: Props)
             'ml-auto px-2 py-1 text-2xs font-mono uppercase tracking-wider rounded transition-all',
             compareMode
               ? 'bg-cyber-500/20 text-cyber-400 border border-cyber-500/50'
-              : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+              : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-300 dark:hover:bg-slate-700'
           )}
         >
           {compareMode ? 'Exit Compare' : 'Compare'}
@@ -214,7 +214,7 @@ export default function VersionHistory({ serverId, filePath, onRestore }: Props)
       )}
 
       {/* Versions list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-2">
         {versions.map((version, index) => (
           <div
             key={version.id}

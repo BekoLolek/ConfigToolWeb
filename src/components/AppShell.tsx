@@ -286,7 +286,7 @@ export default function AppShell({ children }: AppShellProps) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid">
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid flex flex-col">
       {/* Mobile menu button */}
       <button
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -324,7 +324,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Main content */}
       <main
         className={`
-          transition-all duration-300 ease-in-out min-h-screen
+          transition-all duration-300 ease-in-out h-screen flex flex-col
           ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-[72px]'}
         `}
       >

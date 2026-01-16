@@ -195,7 +195,7 @@ export default function ServerView() {
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 flex flex-col flex-1 text-slate-900 dark:text-white">
+    <div className="bg-slate-50 dark:bg-slate-950 flex flex-col h-full overflow-hidden text-slate-900 dark:text-white">
       {/* Header */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 py-0 flex items-center gap-4 h-14 flex-shrink-0">
         {/* Server info */}
@@ -357,23 +357,23 @@ export default function ServerView() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* File Tree Panel */}
         <aside
           className={clsx(
-            'bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-out overflow-hidden',
-            isFileTreeCollapsed ? 'w-0' : 'w-72'
+            'bg-white dark:bg-slate-900/95 flex flex-col transition-all duration-300 ease-out',
+            isFileTreeCollapsed ? 'w-0 overflow-hidden' : 'w-72'
           )}
         >
-          {/* Panel header */}
-          <div className="panel-header flex items-center justify-between flex-shrink-0">
+          {/* Panel header - overflow visible for dropdowns */}
+          <div className="panel-header flex items-center justify-between flex-shrink-0 relative z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
               <span>Files</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-visible">
               <FileUpload
                 serverId={serverId!}
                 currentDirectory="plugins"
@@ -383,7 +383,7 @@ export default function ServerView() {
             </div>
           </div>
           {/* File tree content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
             <FileTree
               serverId={serverId!}
               fileCache={fileCache}
@@ -395,54 +395,92 @@ export default function ServerView() {
           </div>
         </aside>
 
-        {/* File tree collapse toggle */}
+        {/* File tree collapse toggle - Enhanced visibility */}
         <button
           onClick={toggleFileTree}
           className={clsx(
-            'w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all flex-shrink-0',
-            isFileTreeCollapsed && 'border-l'
+            'group relative flex items-center justify-center bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all duration-200 flex-shrink-0 border-x border-slate-200 dark:border-slate-700/50',
+            isFileTreeCollapsed ? 'w-8' : 'w-6'
           )}
-          title={isFileTreeCollapsed ? 'Show files' : 'Hide files'}
+          title={isFileTreeCollapsed ? 'Show files (Ctrl+B)' : 'Hide files (Ctrl+B)'}
         >
-          <svg
-            className={clsx('w-4 h-4 transition-transform duration-300', isFileTreeCollapsed ? 'rotate-180' : '')}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          {/* Vertical line indicator */}
+          <div className="absolute inset-y-4 left-1/2 -translate-x-1/2 w-0.5 bg-slate-300 dark:bg-slate-600 group-hover:bg-cyber-500/50 rounded-full transition-colors" />
+
+          {/* Icon container */}
+          <div className={clsx(
+            'relative z-10 flex items-center justify-center w-5 h-5 rounded bg-slate-200 dark:bg-slate-700 group-hover:bg-cyber-500/20 border border-slate-300 dark:border-slate-600 group-hover:border-cyber-500/50 transition-all',
+          )}>
+            <svg
+              className={clsx('w-3 h-3 transition-transform duration-300', isFileTreeCollapsed ? 'rotate-180' : '')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </div>
+
+          {/* Label on hover when collapsed */}
+          {isFileTreeCollapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+              Show Files
+            </div>
+          )}
         </button>
 
-        {/* Editor area */}
-        <main className="flex-1 flex overflow-hidden bg-slate-100 dark:bg-slate-950">
+        {/* Editor area - with subtle left/right borders for separation */}
+        <main className="flex-1 flex overflow-hidden bg-slate-100 dark:bg-slate-950 min-w-0">
           <EditorPane paneIndex={0} />
           {isSplit && (
             <>
-              <div className="w-px bg-slate-700" />
+              <div className="w-px bg-slate-300 dark:bg-slate-700" />
               <EditorPane paneIndex={1} />
             </>
           )}
         </main>
 
-        {/* History collapse toggle */}
+        {/* History collapse toggle - Enhanced visibility */}
         {activeTab && (
           <button
             onClick={toggleHistory}
             className={clsx(
-              'w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all flex-shrink-0',
-              isHistoryCollapsed && 'border-r'
+              'group relative flex items-center justify-center bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all duration-200 flex-shrink-0 border-x border-slate-200 dark:border-slate-700/50',
+              isHistoryCollapsed ? 'w-8' : 'w-6'
             )}
-            title={isHistoryCollapsed ? 'Show history' : 'Hide history'}
+            title={isHistoryCollapsed ? 'Show history (Ctrl+H)' : 'Hide history (Ctrl+H)'}
           >
-            <svg
-              className={clsx('w-4 h-4 transition-transform duration-300', isHistoryCollapsed ? '' : 'rotate-180')}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            {/* Vertical line indicator */}
+            <div className="absolute inset-y-4 left-1/2 -translate-x-1/2 w-0.5 bg-slate-300 dark:bg-slate-600 group-hover:bg-cyber-500/50 rounded-full transition-colors" />
+
+            {/* Icon container */}
+            <div className={clsx(
+              'relative z-10 flex items-center justify-center w-5 h-5 rounded bg-slate-200 dark:bg-slate-700 group-hover:bg-cyber-500/20 border border-slate-300 dark:border-slate-600 group-hover:border-cyber-500/50 transition-all',
+            )}>
+              {isHistoryCollapsed ? (
+                // Clock icon when collapsed to indicate history
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                // Arrow when expanded
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              )}
+            </div>
+
+            {/* Label on hover when collapsed */}
+            {isHistoryCollapsed && (
+              <div className="absolute right-full mr-2 px-2 py-1 bg-slate-800 text-white text-xs font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                Show History
+              </div>
+            )}
           </button>
         )}
 
@@ -450,8 +488,8 @@ export default function ServerView() {
         {activeTab && (
           <aside
             className={clsx(
-              'bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300 ease-out flex flex-col',
-              isHistoryCollapsed ? 'w-0' : 'w-80'
+              'bg-white dark:bg-slate-900/95 flex flex-col transition-all duration-300 ease-out',
+              isHistoryCollapsed ? 'w-0 overflow-hidden' : 'w-80'
             )}
           >
             <VersionHistory
