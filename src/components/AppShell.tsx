@@ -293,10 +293,10 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Collapse toggle - desktop only */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden lg:flex items-center justify-center h-10 border-t border-slate-200 dark:border-slate-800/50 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all"
+        className="hidden lg:flex items-center justify-center h-10 border-t border-slate-200 dark:border-slate-800/50 text-cyber-500 dark:text-cyber-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all"
       >
         <svg
-          className={`w-5 h-5 transition-transform duration-300 ${sidebarOpen ? '' : 'rotate-180'}`}
+          className={`w-5 h-5 transition-transform duration-300 drop-shadow-[0_0_3px_rgba(6,182,212,0.5)] hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.8)] ${sidebarOpen ? '' : 'rotate-180'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
