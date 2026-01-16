@@ -113,9 +113,9 @@ export default function RecentFiles({ serverId, serverName, showServerName = fal
         </svg>
       </button>
 
-      {/* Dropdown menu - positioned to avoid cropping */}
+      {/* Dropdown menu - z-[60] ensures it appears above sidebar (z-40) */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden z-50 animate-slide-up">
+        <div className="absolute top-full right-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden z-[60] animate-slide-up">
           {/* Header */}
           <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between">
             <span className="font-display text-xs uppercase tracking-wider text-slate-400">
