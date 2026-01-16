@@ -1,110 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import ThemeToggle from '../components/ThemeToggle';
-
-// Plan types matching backend
-type Plan = 'FREE' | 'PRO' | 'TEAM' | 'ENTERPRISE';
-
-interface PlanDetails {
-  name: string;
-  description: string;
-  priceMonthly: number;
-  priceYearly: number;
-  maxServers: number;
-  maxMembers: number;
-  versionRetentionDays: number;
-  maxVersionsPerFile: number;
-  features: string[];
-  highlighted?: boolean;
-  badge?: string;
-}
-
-const PLANS: Record<Plan, PlanDetails> = {
-  FREE: {
-    name: 'Free',
-    description: 'For hobbyists and small projects',
-    priceMonthly: 0,
-    priceYearly: 0,
-    maxServers: 2,
-    maxMembers: 1,
-    versionRetentionDays: 30,
-    maxVersionsPerFile: 50,
-    features: [
-      'Basic config editor',
-      'Real-time sync',
-      'Version history',
-      'Community support',
-    ],
-  },
-  PRO: {
-    name: 'Pro',
-    description: 'For serious server administrators',
-    priceMonthly: 1999,
-    priceYearly: 19190,
-    maxServers: 10,
-    maxMembers: 1,
-    versionRetentionDays: 90,
-    maxVersionsPerFile: 200,
-    features: [
-      'Everything in Free',
-      'Extended version history',
-      'Priority sync',
-      'Email support',
-      'Advanced diagnostics',
-    ],
-    highlighted: true,
-    badge: 'Popular',
-  },
-  TEAM: {
-    name: 'Team',
-    description: 'For networks and organizations',
-    priceMonthly: 4999,
-    priceYearly: 47990,
-    maxServers: 1000,
-    maxMembers: 10,
-    versionRetentionDays: 365,
-    maxVersionsPerFile: 1000,
-    features: [
-      'Everything in Pro',
-      'Team collaboration',
-      'Role-based access',
-      'Audit logging',
-      'Priority support',
-      'Custom integrations',
-    ],
-  },
-  ENTERPRISE: {
-    name: 'Enterprise',
-    description: 'For large-scale deployments',
-    priceMonthly: -1,
-    priceYearly: -1,
-    maxServers: Infinity,
-    maxMembers: Infinity,
-    versionRetentionDays: Infinity,
-    maxVersionsPerFile: Infinity,
-    features: [
-      'Everything in Team',
-      'Unlimited everything',
-      'Dedicated support',
-      'SLA guarantees',
-      'Custom development',
-      'On-premise option',
-    ],
-  },
-};
-
-function formatPrice(cents: number, yearly: boolean): string {
-  if (cents === -1) return 'Custom';
-  if (cents === 0) return 'Free';
-  const dollars = cents / 100;
-  return `$${dollars.toFixed(2)}`;
-}
-
-function formatLimit(value: number): string {
-  if (value === Infinity || value === 2147483647) return 'Unlimited';
-  return value.toLocaleString();
-}
+import { PLANS, Plan, PlanDetails, formatPrice, formatLimit, TRIAL_DAYS } from '../data/plans';
 
 // Animated check icon
 function CheckIcon({ className = '' }: { className?: string }) {
@@ -140,7 +38,7 @@ function HexDecoration({ className = '' }: { className?: string }) {
 export default function Pricing() {
   const { user, logout, refreshToken } = useAuthStore();
   const [isYearly, setIsYearly] = useState(false);
-  const [currentPlan] = useState<Plan>('FREE'); // TODO: Get from subscription
+  const [currentPlan] = useState<Plan | null>(null); // TODO: Get from subscription
   const [hoveredPlan, setHoveredPlan] = useState<Plan | null>(null);
   const navigate = useNavigate();
 
@@ -166,8 +64,8 @@ export default function Pricing() {
   const getButtonText = (plan: Plan): string => {
     if (plan === currentPlan) return 'Current Plan';
     if (plan === 'ENTERPRISE') return 'Contact Sales';
-    if (plan === 'FREE') return 'Downgrade';
-    const planOrder: Plan[] = ['FREE', 'PRO', 'TEAM', 'ENTERPRISE'];
+    if (!currentPlan) return 'Start Free Trial';
+    const planOrder: Plan[] = ['PRO', 'TEAM', 'ENTERPRISE'];
     const currentIndex = planOrder.indexOf(currentPlan);
     const targetIndex = planOrder.indexOf(plan);
     return targetIndex > currentIndex ? 'Upgrade' : 'Downgrade';
@@ -258,7 +156,7 @@ export default function Pricing() {
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20 max-w-5xl mx-auto">
           {(Object.entries(PLANS) as [Plan, PlanDetails][]).map(([key, plan], index) => {
             const isCurrentPlan = key === currentPlan;
             const isHighlighted = plan.highlighted;
@@ -495,20 +393,20 @@ export default function Pricing() {
           <div className="space-y-4">
             {[
               {
+                q: 'Is there a free trial?',
+                a: `Yes! All new accounts get a ${TRIAL_DAYS}-day free trial with full access to Team plan features. No credit card required to start.`,
+              },
+              {
                 q: 'Can I switch plans anytime?',
                 a: 'Yes! You can upgrade or downgrade your plan at any time. When upgrading, the new features are available immediately. When downgrading, the change takes effect at the end of your billing cycle.',
               },
               {
                 q: 'What happens to my data if I downgrade?',
-                a: 'Your data is safe. However, if you exceed the limits of your new plan, you won\'t be able to add new servers or team members until you\'re within the limits.',
+                a: 'Your data is safe. However, if you exceed the limits of your new plan (e.g., automation features on Pro), those features will be disabled until you upgrade.',
               },
               {
                 q: 'Do you offer refunds?',
                 a: 'We offer a 14-day money-back guarantee for all paid plans. If you\'re not satisfied, contact us within 14 days of your purchase for a full refund.',
-              },
-              {
-                q: 'Is there a free trial for paid plans?',
-                a: 'Yes! All paid plans come with a 7-day free trial. No credit card required to start. You can explore all premium features risk-free.',
               },
             ].map((faq, i) => (
               <details
@@ -548,11 +446,11 @@ export default function Pricing() {
                 Ready to level up?
               </h3>
               <p className="text-slate-500 dark:text-slate-400 mb-6">
-                Start your free trial today. No credit card required.
+                Start your {TRIAL_DAYS}-day free trial with full Team features. No credit card required.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link to="/login" className="btn btn-primary px-8">
-                  Get Started Free
+                  Start Free Trial
                 </Link>
                 <a
                   href="mailto:sales@configtool.dev"

@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { userApi } from '../api/endpoints';
-import ThemeToggle from '../components/ThemeToggle';
 
 // Password validation
 interface PasswordValidation {
@@ -155,7 +154,7 @@ function PasswordStrengthMeter({ validation }: { validation: PasswordValidation 
 }
 
 export default function Profile() {
-  const { user, logout, refreshToken } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
   // State
@@ -194,14 +193,6 @@ export default function Profile() {
   useEffect(() => {
     setPasswordValidation(validatePassword(newPassword, confirmPassword));
   }, [newPassword, confirmPassword]);
-
-  const handleLogout = async () => {
-    if (refreshToken) {
-      await import('../api/endpoints').then(m => m.authApi.logout(refreshToken)).catch(() => {});
-    }
-    logout();
-    navigate('/login');
-  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,7 +243,7 @@ export default function Profile() {
     Object.values(passwordValidation).every(Boolean);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-ops-grid relative overflow-hidden">
+    <div className="relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-40 -left-32 w-96 h-96 bg-cyber-500/5 rounded-full blur-3xl" />
@@ -262,46 +253,15 @@ export default function Profile() {
         <HexPattern className="absolute top-1/3 left-1/4 w-24 h-24 text-slate-500/10 hidden lg:block" />
       </div>
 
-      {/* Navigation */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded border border-cyber-500/30 bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
-                <svg className="w-4 h-4 text-cyber-500 dark:text-cyber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-              </div>
-              <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white">
-                CONFIG<span className="text-cyber-500 dark:text-cyber-400">TOOL</span>
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Link to="/" className="btn btn-ghost text-xs">Dashboard</Link>
-              <button onClick={handleLogout} className="btn btn-ghost text-xs">Logout</button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 relative z-10">
         {/* Header */}
         <div
           className={`mb-8 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
         >
-          <div className="flex items-center gap-3 mb-2">
-            <Link to="/" className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-wide">
-              User Profile
-            </h1>
-          </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-wider ml-8">
+          <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-wide mb-2">
+            User Profile
+          </h1>
+          <p className="text-slate-500 font-mono text-sm uppercase tracking-wider">
             Account Settings & Security
           </p>
         </div>
