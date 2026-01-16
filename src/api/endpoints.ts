@@ -18,7 +18,7 @@ export interface AddPaymentMethodRequest {
   paymentMethodId: string;
   setAsDefault?: boolean;
 }
-export const healthApi = { check: () => api.get('/api/health') };
+export const healthApi = { check: () => api.get('/actuator/health') };
 export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }), verifyEmail: (token: string) => api.post('/api/auth/verify-email', { token }) };
 export const serverApi = {
   list: () => api.get<Server[]>('/api/servers'),
