@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import ThemeToggle from './ThemeToggle';
 import EmailVerificationBanner from './EmailVerificationBanner';
+import clsx from 'clsx';
 
 interface NavItem {
   label: string;
@@ -309,14 +310,16 @@ export default function AppShell({ children }: AppShellProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - slides partially off-screen when collapsed, showing only icons (72px visible) */}
       <aside
-        className={`
-          fixed top-0 left-0 h-full z-40 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800/50
-          transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'w-64' : 'w-[72px]'}
-          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
+        className={clsx(
+          'fixed top-0 left-0 h-full z-40 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800/50',
+          'transition-transform duration-300 ease-in-out w-64',
+          // Mobile: fully hidden unless menu open
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
+          // Desktop: slide to show only icons when collapsed
+          sidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-[192px]'
+        )}
       >
         <SidebarContent />
       </aside>
@@ -324,7 +327,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Main content */}
       <main
         className={`
-          transition-all duration-300 ease-in-out h-screen flex flex-col
+          transition-[padding] duration-300 ease-in-out h-screen flex flex-col
           ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-[72px]'}
         `}
       >
