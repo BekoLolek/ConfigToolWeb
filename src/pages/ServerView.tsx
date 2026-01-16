@@ -358,11 +358,11 @@ export default function ServerView() {
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* File Tree Panel */}
+        {/* File Tree Panel - overflow-hidden prevents content overlap during animation */}
         <aside
           className={clsx(
-            'bg-white dark:bg-slate-900/95 flex flex-col transition-all duration-300 ease-out border-r border-slate-200 dark:border-slate-700/50',
-            isFileTreeCollapsed ? 'w-0 overflow-hidden border-r-0' : 'w-72'
+            'bg-white dark:bg-slate-900/95 flex flex-col transition-all duration-300 ease-out overflow-hidden',
+            isFileTreeCollapsed ? 'w-0 border-r-0' : 'w-72 border-r border-slate-200 dark:border-slate-700/50'
           )}
         >
           {/* Panel header - h-16 matches main header */}
@@ -464,11 +464,11 @@ export default function ServerView() {
           )}
         </button>
 
-        {/* Version History Panel */}
+        {/* Version History Panel - overflow-hidden prevents content overlap during animation */}
         <aside
           className={clsx(
-            'bg-white dark:bg-slate-900/95 flex flex-col transition-all duration-300 ease-out border-l border-slate-200 dark:border-slate-700/50',
-            isHistoryCollapsed ? 'w-0 overflow-hidden border-l-0' : 'w-80'
+            'bg-white dark:bg-slate-900/95 flex flex-col transition-all duration-300 ease-out overflow-hidden',
+            isHistoryCollapsed ? 'w-0 border-l-0' : 'w-80 border-l border-slate-200 dark:border-slate-700/50'
           )}
         >
           {activeTab ? (
