@@ -366,8 +366,8 @@ export default function ServerView() {
           )}
         >
           <aside className="w-72 bg-white dark:bg-slate-900/95 flex flex-col border-r border-slate-200 dark:border-slate-700/50 h-full">
-            {/* Panel header - z-[60] ensures dropdown appears above sidebar (z-40) */}
-            <div className="h-16 px-3 flex items-center justify-between flex-shrink-0 relative z-[60] bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+            {/* Panel header */}
+            <div className="h-16 px-3 flex items-center justify-between flex-shrink-0 relative bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2 min-w-0">
                 <svg className="w-4 h-4 text-cyber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />

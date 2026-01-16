@@ -123,7 +123,7 @@ export default function SearchModal({ serverId, isOpen, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-start justify-center pt-[15vh] z-50 animate-fade-in"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-start justify-center pt-[15vh] z-[70] animate-fade-in"
       onClick={handleBackdropClick}
     >
       <div className="relative w-full max-w-2xl mx-4 animate-slide-up">
