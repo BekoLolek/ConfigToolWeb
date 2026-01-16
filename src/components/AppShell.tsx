@@ -147,8 +147,8 @@ export default function AppShell({ children }: AppShellProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-slate-200 dark:border-slate-800/50">
-        <div className="relative">
+      <div className="flex items-center gap-3 px-4 h-16 border-b border-slate-200 dark:border-slate-800/50 overflow-hidden">
+        <div className="relative flex-shrink-0">
           <div className="w-9 h-9 rounded-lg border border-cyber-500/30 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center shadow-sm">
             <svg className="w-5 h-5 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
@@ -156,54 +156,65 @@ export default function AppShell({ children }: AppShellProps) {
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-cyber-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
         </div>
-        {sidebarOpen && (
-          <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white whitespace-nowrap">
-            CONFIG<span className="text-cyber-500">TOOL</span>
-          </span>
-        )}
+        <span className={clsx(
+          'font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white whitespace-nowrap transition-all duration-300',
+          sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        )}>
+          CONFIG<span className="text-cyber-500">TOOL</span>
+        </span>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
         {navigation.map((section, sectionIndex) => (
           <div key={sectionIndex}>
-            {section.title && sidebarOpen && (
-              <h3 className="px-3 mb-2 text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600">
-                {section.title}
-              </h3>
-            )}
-            {section.title && !sidebarOpen && (
-              <div className="h-px bg-slate-200 dark:bg-slate-800 mx-2 mb-3" />
+            {/* Section title - transforms to line when collapsed */}
+            {section.title && (
+              <div className="relative h-5 mb-2 mx-1">
+                <h3 className={clsx(
+                  'absolute inset-0 flex items-center px-2 text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 transition-all duration-300',
+                  sidebarOpen ? 'opacity-100' : 'opacity-0'
+                )}>
+                  {section.title}
+                </h3>
+                <div className={clsx(
+                  'absolute top-1/2 left-0 right-0 h-px bg-slate-200 dark:bg-slate-700 transition-all duration-300',
+                  sidebarOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'
+                )} />
+              </div>
             )}
             <ul className="space-y-1">
               {section.items.map((item) => {
                 const active = isActive(item.path);
                 return (
-                  <li key={item.path}>
+                  <li key={item.path} className="relative">
                     <Link
                       to={item.path}
-                      className={`
-                        group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
-                        ${active
+                      className={clsx(
+                        'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                        active
                           ? 'bg-cyber-500/10 text-cyber-600 dark:text-cyber-400 border border-cyber-500/20'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white border border-transparent'
-                        }
-                        ${!sidebarOpen ? 'justify-center' : ''}
-                      `}
-                      title={!sidebarOpen ? item.label : undefined}
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white border border-transparent',
+                        // When collapsed: clip content, but expand on hover
+                        !sidebarOpen && 'overflow-hidden hover:overflow-visible hover:w-auto hover:absolute hover:left-0 hover:right-auto hover:z-50 hover:pr-4 hover:bg-white dark:hover:bg-slate-900 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700'
+                      )}
                     >
-                      <span className={`flex-shrink-0 transition-colors ${active ? 'text-cyber-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}>
+                      <span className={clsx(
+                        'flex-shrink-0 transition-colors',
+                        active ? 'text-cyber-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                      )}>
                         {item.icon}
                       </span>
-                      {sidebarOpen && (
-                        <>
-                          <span className="font-medium text-sm">{item.label}</span>
-                          {item.badge && (
-                            <span className="ml-auto px-2 py-0.5 text-2xs font-mono font-semibold bg-cyber-500/20 text-cyber-600 dark:text-cyber-400 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
+                      <span className={clsx(
+                        'font-medium text-sm whitespace-nowrap transition-all duration-300',
+                        sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'
+                      )}>
+                        {item.label}
+                      </span>
+                      {item.badge && sidebarOpen && (
+                        <span className="ml-auto px-2 py-0.5 text-2xs font-mono font-semibold bg-cyber-500/20 text-cyber-600 dark:text-cyber-400 rounded-full">
+                          {item.badge}
+                        </span>
                       )}
                     </Link>
                   </li>
@@ -217,22 +228,23 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Bottom section */}
       <div className="border-t border-slate-200 dark:border-slate-800/50 p-3 space-y-2">
         {/* Theme toggle */}
-        <div className={`flex items-center ${sidebarOpen ? 'justify-between px-3 py-2' : 'justify-center py-2'}`}>
-          {sidebarOpen && (
-            <span className="text-xs font-mono uppercase tracking-wider text-slate-500">Theme</span>
-          )}
+        <div className="flex items-center gap-3 px-3 py-2 overflow-hidden">
           <ThemeToggle />
+          <span className={clsx(
+            'text-xs font-mono uppercase tracking-wider text-slate-500 whitespace-nowrap transition-all duration-300',
+            sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+          )}>
+            Theme
+          </span>
         </div>
 
         {/* User section */}
         <Link
           to="/profile"
-          className={`
-            flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
-            hover:bg-slate-100 dark:hover:bg-slate-800/50
-            ${!sidebarOpen ? 'justify-center' : ''}
-          `}
-          title={!sidebarOpen ? user?.email : undefined}
+          className={clsx(
+            'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50',
+            !sidebarOpen && 'overflow-hidden hover:overflow-visible hover:w-auto hover:absolute hover:left-3 hover:right-auto hover:z-50 hover:pr-4 hover:bg-white dark:hover:bg-slate-900 hover:shadow-lg hover:border hover:border-slate-200 dark:hover:border-slate-700'
+          )}
         >
           <div className="relative flex-shrink-0">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyber-400 to-cyber-600 flex items-center justify-center text-white text-xs font-bold uppercase">
@@ -240,32 +252,36 @@ export default function AppShell({ children }: AppShellProps) {
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-status-online rounded-full border-2 border-white dark:border-slate-900" />
           </div>
-          {sidebarOpen && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                {user?.email?.split('@')[0] || 'User'}
-              </p>
-              <p className="text-2xs text-slate-500 truncate font-mono uppercase tracking-wider">
-                Active
-              </p>
-            </div>
-          )}
+          <div className={clsx(
+            'min-w-0 transition-all duration-300',
+            sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'
+          )}>
+            <p className="text-sm font-medium text-slate-900 dark:text-white truncate whitespace-nowrap">
+              {user?.email?.split('@')[0] || 'User'}
+            </p>
+            <p className="text-2xs text-slate-500 truncate font-mono uppercase tracking-wider whitespace-nowrap">
+              Active
+            </p>
+          </div>
         </Link>
 
         {/* Logout button */}
         <button
           onClick={handleLogout}
-          className={`
-            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
-            text-slate-500 hover:text-red-500 hover:bg-red-500/10
-            ${!sidebarOpen ? 'justify-center' : ''}
-          `}
-          title={!sidebarOpen ? 'Logout' : undefined}
+          className={clsx(
+            'group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-slate-500 hover:text-red-500 hover:bg-red-500/10',
+            !sidebarOpen && 'overflow-hidden hover:overflow-visible hover:w-auto hover:absolute hover:left-3 hover:right-auto hover:z-50 hover:pr-4 hover:bg-white dark:hover:bg-slate-900 hover:shadow-lg hover:border hover:border-slate-200 dark:hover:border-slate-700'
+          )}
         >
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          {sidebarOpen && <span className="text-sm font-medium">Logout</span>}
+          <span className={clsx(
+            'text-sm font-medium whitespace-nowrap transition-all duration-300',
+            sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'
+          )}>
+            Logout
+          </span>
         </button>
       </div>
 
