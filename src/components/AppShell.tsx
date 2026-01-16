@@ -191,10 +191,9 @@ export default function AppShell({ children }: AppShellProps) {
                         'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 overflow-hidden',
                         active
                           ? 'bg-cyber-500/10 text-cyber-600 dark:text-cyber-400 border border-cyber-500/20'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white border border-transparent',
-                        // When collapsed: expand width on hover to reveal text
-                        !sidebarOpen && 'hover:w-48 hover:absolute hover:z-[100] hover:bg-white dark:hover:bg-slate-900 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white border border-transparent'
                       )}
+                      title={!sidebarOpen ? item.label : undefined}
                     >
                       <span className={clsx(
                         'flex-shrink-0 transition-colors',
@@ -220,13 +219,18 @@ export default function AppShell({ children }: AppShellProps) {
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-slate-200 dark:border-slate-800/50 p-3 space-y-2 overflow-hidden">
+      <div className="border-t border-slate-200 dark:border-slate-800/50 p-3 space-y-2">
         {/* Theme toggle */}
-        <div className="flex items-center gap-3 px-3 py-2 overflow-hidden">
+        <div className={clsx(
+          'flex items-center gap-3 py-2 rounded-lg',
+          sidebarOpen ? 'px-3' : 'justify-center'
+        )}>
           <ThemeToggle />
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-500 whitespace-nowrap">
-            Theme
-          </span>
+          {sidebarOpen && (
+            <span className="text-xs font-mono uppercase tracking-wider text-slate-500 whitespace-nowrap">
+              Theme
+            </span>
+          )}
         </div>
 
         {/* User section */}
@@ -234,8 +238,9 @@ export default function AppShell({ children }: AppShellProps) {
           to="/profile"
           className={clsx(
             'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all overflow-hidden hover:bg-slate-100 dark:hover:bg-slate-800/50',
-            !sidebarOpen && 'hover:w-48 hover:absolute hover:z-[100] hover:bg-white dark:hover:bg-slate-900 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700'
+            !sidebarOpen && 'justify-center'
           )}
+          title={!sidebarOpen ? user?.email : undefined}
         >
           <div className="relative flex-shrink-0">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyber-400 to-cyber-600 flex items-center justify-center text-white text-xs font-bold uppercase">
@@ -243,30 +248,35 @@ export default function AppShell({ children }: AppShellProps) {
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-status-online rounded-full border-2 border-white dark:border-slate-900" />
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-900 dark:text-white truncate whitespace-nowrap">
-              {user?.email?.split('@')[0] || 'User'}
-            </p>
-            <p className="text-2xs text-slate-500 truncate font-mono uppercase tracking-wider whitespace-nowrap">
-              Active
-            </p>
-          </div>
+          {sidebarOpen && (
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-slate-900 dark:text-white truncate whitespace-nowrap">
+                {user?.email?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-2xs text-slate-500 truncate font-mono uppercase tracking-wider whitespace-nowrap">
+                Active
+              </p>
+            </div>
+          )}
         </Link>
 
         {/* Logout button */}
         <button
           onClick={handleLogout}
           className={clsx(
-            'group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all overflow-hidden text-slate-500 hover:text-red-500 hover:bg-red-500/10',
-            !sidebarOpen && 'hover:w-48 hover:absolute hover:z-[100] hover:bg-white dark:hover:bg-slate-900 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700'
+            'group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-slate-500 hover:text-red-500 hover:bg-red-500/10',
+            !sidebarOpen && 'justify-center'
           )}
+          title={!sidebarOpen ? 'Logout' : undefined}
         >
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          <span className="text-sm font-medium whitespace-nowrap">
-            Logout
-          </span>
+          {sidebarOpen && (
+            <span className="text-sm font-medium whitespace-nowrap">
+              Logout
+            </span>
+          )}
         </button>
       </div>
 
