@@ -1,117 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
-
-// Types matching backend DTOs
-type Plan = 'FREE' | 'PRO' | 'TEAM' | 'ENTERPRISE';
-type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'TRIALING';
-type InvoiceStatus = 'DRAFT' | 'OPEN' | 'PAID' | 'VOID' | 'UNCOLLECTIBLE';
-
-interface Subscription {
-  id: string;
-  plan: Plan;
-  status: SubscriptionStatus;
-  trialEndsAt: string | null;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  cancelAtPeriodEnd: boolean;
-}
-
-interface Invoice {
-  id: string;
-  stripeInvoiceId: string;
-  amountDue: number;
-  amountPaid: number;
-  currency: string;
-  status: InvoiceStatus;
-  invoiceUrl: string | null;
-  invoicePdf: string | null;
-  periodStart: string;
-  periodEnd: string;
-  createdAt: string;
-}
-
-interface Usage {
-  currentServers: number;
-  maxServers: number;
-  currentMembers: number;
-  maxMembers: number;
-  currentVersionsCount: number;
-  maxVersionsPerFile: number;
-  versionRetentionDays: number;
-  plan: Plan;
-}
-
-interface PaymentMethod {
-  id: string;
-  type: string;
-  cardBrand: string;
-  cardLast4: string;
-  cardExpMonth: number;
-  cardExpYear: number;
-  isDefault: boolean;
-}
-
-// Mock data for development
-const MOCK_SUBSCRIPTION: Subscription = {
-  id: '1',
-  plan: 'PRO',
-  status: 'ACTIVE',
-  trialEndsAt: null,
-  currentPeriodStart: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-  currentPeriodEnd: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-  cancelAtPeriodEnd: false,
-};
-
-const MOCK_USAGE: Usage = {
-  currentServers: 4,
-  maxServers: 10,
-  currentMembers: 1,
-  maxMembers: 1,
-  currentVersionsCount: 127,
-  maxVersionsPerFile: 200,
-  versionRetentionDays: 90,
-  plan: 'PRO',
-};
-
-const MOCK_INVOICES: Invoice[] = [
-  {
-    id: '1',
-    stripeInvoiceId: 'in_1234',
-    amountDue: 1999,
-    amountPaid: 1999,
-    currency: 'usd',
-    status: 'PAID',
-    invoiceUrl: '#',
-    invoicePdf: '#',
-    periodStart: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    periodEnd: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    stripeInvoiceId: 'in_1233',
-    amountDue: 1999,
-    amountPaid: 1999,
-    currency: 'usd',
-    status: 'PAID',
-    invoiceUrl: '#',
-    invoicePdf: '#',
-    periodStart: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-    periodEnd: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-const MOCK_PAYMENT_METHOD: PaymentMethod = {
-  id: '1',
-  type: 'card',
-  cardBrand: 'visa',
-  cardLast4: '4242',
-  cardExpMonth: 12,
-  cardExpYear: 2027,
-  isDefault: true,
-};
+import { Link, useSearchParams } from 'react-router-dom';
+import { useBillingStore } from '../stores/billingStore';
+import PaymentMethodManager from '../components/PaymentMethodManager';
+import type { Plan, SubscriptionStatus, InvoiceStatus } from '../types';
 
 const PLAN_NAMES: Record<Plan, string> = {
   FREE: 'Free',
@@ -194,36 +85,115 @@ function CardBrandIcon({ brand }: { brand: string }) {
   );
 }
 
-export default function Billing() {
-  const { user } = useAuthStore();
-  const navigate = useNavigate();
-
-  // State - would be fetched from API in production
-  const [subscription] = useState<Subscription>(MOCK_SUBSCRIPTION);
-  const [usage] = useState<Usage>(MOCK_USAGE);
-  const [invoices] = useState<Invoice[]>(MOCK_INVOICES);
-  const [paymentMethod] = useState<PaymentMethod | null>(MOCK_PAYMENT_METHOD);
-  const [loading] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-
-  const daysRemaining = Math.ceil(
-    (new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+// Loading skeleton component
+function LoadingSkeleton({ className = '' }: { className?: string }) {
+  return (
+    <div className={`animate-pulse bg-slate-200 dark:bg-slate-700 rounded ${className}`} />
   );
+}
+
+export default function Billing() {
+  const [searchParams] = useSearchParams();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPaymentManager, setShowPaymentManager] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Get billing data from store
+  const {
+    subscription,
+    usage,
+    invoices,
+    paymentMethods,
+    loadingSubscription,
+    loadingUsage,
+    loadingInvoices,
+    loadingPaymentMethods,
+    error,
+    fetchAll,
+    cancelSubscription,
+    resumeSubscription,
+    addPaymentMethod,
+    removePaymentMethod,
+    setDefaultPaymentMethod,
+    openBillingPortal,
+    clearError,
+  } = useBillingStore();
+
+  // Fetch billing data on mount
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  // Show success message if redirected from checkout
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      // Could add a toast notification here
+      console.log('Subscription updated successfully!');
+    }
+  }, [searchParams]);
+
+  // Calculate days remaining
+  const daysRemaining = subscription
+    ? Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  // Get default payment method for display
+  const defaultPaymentMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0] || null;
 
   const handleCancelSubscription = async () => {
-    // TODO: Call billing API
-    console.log('Cancel subscription');
-    setShowCancelModal(false);
+    setActionLoading(true);
+    try {
+      await cancelSubscription();
+      setShowCancelModal(false);
+    } catch (err) {
+      // Error is already set in store
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleResumeSubscription = async () => {
-    // TODO: Call billing API
-    console.log('Resume subscription');
+    setActionLoading(true);
+    try {
+      await resumeSubscription();
+    } catch (err) {
+      // Error is already set in store
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  const handleOpenBillingPortal = async () => {
+    try {
+      await openBillingPortal(window.location.href);
+    } catch (err) {
+      // Error is already set in store
+    }
+  };
+
+  // Loading state - show skeleton
+  const isLoading = loadingSubscription && !subscription;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 bg-status-error/10 border border-status-error/30 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-status-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-status-error text-sm">{error}</p>
+            </div>
+            <button onClick={clearError} className="text-status-error hover:text-status-error/80">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
@@ -235,9 +205,17 @@ export default function Billing() {
             </p>
           </div>
 
-          <Link to="/pricing" className="btn btn-secondary">
-            View All Plans
-          </Link>
+          <div className="flex items-center gap-3">
+            <button onClick={handleOpenBillingPortal} className="btn btn-ghost text-sm">
+              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Stripe Portal
+            </button>
+            <Link to="/pricing" className="btn btn-secondary">
+              View All Plans
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -245,87 +223,128 @@ export default function Billing() {
           <div className="lg:col-span-2 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
             <div className="p-6">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
-                    Current Plan
-                  </h2>
-                  <p className="text-slate-500 text-sm">
-                    Your subscription details and billing cycle
-                  </p>
+              {isLoading ? (
+                // Loading skeleton
+                <div className="space-y-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <LoadingSkeleton className="h-6 w-32 mb-2" />
+                      <LoadingSkeleton className="h-4 w-48" />
+                    </div>
+                    <LoadingSkeleton className="h-6 w-20 rounded-full" />
+                  </div>
+                  <LoadingSkeleton className="h-12 w-40" />
+                  <LoadingSkeleton className="h-24 w-full" />
+                  <div className="flex gap-3">
+                    <LoadingSkeleton className="h-10 w-32" />
+                    <LoadingSkeleton className="h-10 w-40" />
+                  </div>
                 </div>
-                <span className={`px-3 py-1 text-xs font-mono uppercase tracking-wider rounded-full border ${getStatusColor(subscription.status)}`}>
-                  {subscription.status}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-6 mb-6">
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-display text-4xl font-bold text-slate-900 dark:text-white">
-                      {PLAN_NAMES[subscription.plan]}
+              ) : !subscription ? (
+                // No subscription state
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white mb-2">No Active Subscription</h3>
+                  <p className="text-slate-500 text-sm mb-4">Get started with a plan to unlock all features</p>
+                  <Link to="/pricing" className="btn btn-primary">
+                    View Plans
+                  </Link>
+                </div>
+              ) : (
+                // Normal subscription display
+                <>
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
+                        Current Plan
+                      </h2>
+                      <p className="text-slate-500 text-sm">
+                        Your subscription details and billing cycle
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 text-xs font-mono uppercase tracking-wider rounded-full border ${getStatusColor(subscription.status)}`}>
+                      {subscription.status === 'TRIALING' ? `Trial (${subscription.trialDaysRemaining}d left)` : subscription.status}
                     </span>
-                    {PLAN_PRICES[subscription.plan] > 0 && (
-                      <span className="text-slate-500 font-mono">
-                        {formatCurrency(PLAN_PRICES[subscription.plan])}/mo
-                      </span>
-                    )}
                   </div>
-                </div>
-              </div>
 
-              {/* Billing cycle info */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">
-                      Current Period
-                    </p>
-                    <p className="text-sm text-slate-900 dark:text-white">
-                      {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">
-                      Renews In
-                    </p>
-                    <p className="font-display text-2xl font-bold text-cyber-500">
-                      {daysRemaining} days
-                    </p>
-                  </div>
-                </div>
-
-                {subscription.cancelAtPeriodEnd && (
-                  <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-2 text-status-warning">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <span className="text-sm font-medium">
-                        Your subscription will cancel on {formatDate(subscription.currentPeriodEnd)}
-                      </span>
+                  <div className="flex items-center gap-6 mb-6">
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-display text-4xl font-bold text-slate-900 dark:text-white">
+                          {PLAN_NAMES[subscription.plan]}
+                        </span>
+                        {PLAN_PRICES[subscription.plan] > 0 && (
+                          <span className="text-slate-500 font-mono">
+                            {formatCurrency(PLAN_PRICES[subscription.plan])}/mo
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3">
-                <Link to="/pricing" className="btn btn-primary">
-                  {subscription.plan === 'FREE' ? 'Upgrade Plan' : 'Change Plan'}
-                </Link>
-                {subscription.plan !== 'FREE' && (
-                  subscription.cancelAtPeriodEnd ? (
-                    <button onClick={handleResumeSubscription} className="btn btn-secondary">
-                      Resume Subscription
-                    </button>
-                  ) : (
-                    <button onClick={() => setShowCancelModal(true)} className="btn btn-ghost text-status-error hover:bg-status-error/10">
-                      Cancel Subscription
-                    </button>
-                  )
-                )}
-              </div>
+                  {/* Billing cycle info */}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">
+                          Current Period
+                        </p>
+                        <p className="text-sm text-slate-900 dark:text-white">
+                          {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">
+                          {subscription.cancelAtPeriodEnd ? 'Ends In' : 'Renews In'}
+                        </p>
+                        <p className={`font-display text-2xl font-bold ${subscription.cancelAtPeriodEnd ? 'text-status-warning' : 'text-cyber-500'}`}>
+                          {daysRemaining} days
+                        </p>
+                      </div>
+                    </div>
+
+                    {subscription.cancelAtPeriodEnd && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-status-warning">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <span className="text-sm font-medium">
+                            Your subscription will cancel on {formatDate(subscription.currentPeriodEnd)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-3">
+                    <Link to="/pricing" className="btn btn-primary">
+                      {subscription.plan === 'FREE' ? 'Upgrade Plan' : 'Change Plan'}
+                    </Link>
+                    {subscription.plan !== 'FREE' && (
+                      subscription.cancelAtPeriodEnd ? (
+                        <button
+                          onClick={handleResumeSubscription}
+                          disabled={actionLoading}
+                          className="btn btn-secondary disabled:opacity-50"
+                        >
+                          {actionLoading ? 'Resuming...' : 'Resume Subscription'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setShowCancelModal(true)}
+                          className="btn btn-ghost text-status-error hover:bg-status-error/10"
+                        >
+                          Cancel Subscription
+                        </button>
+                      )
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -336,24 +355,34 @@ export default function Billing() {
                 Payment Method
               </h2>
 
-              {paymentMethod ? (
+              {loadingPaymentMethods && paymentMethods.length === 0 ? (
+                <div className="space-y-4">
+                  <LoadingSkeleton className="h-16 w-full" />
+                  <LoadingSkeleton className="h-10 w-full" />
+                </div>
+              ) : defaultPaymentMethod ? (
                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 mb-4">
                   <div className="flex items-center gap-3">
-                    <CardBrandIcon brand={paymentMethod.cardBrand} />
+                    <CardBrandIcon brand={defaultPaymentMethod.cardBrand} />
                     <div className="flex-1">
                       <p className="font-mono text-slate-900 dark:text-white">
-                        •••• •••• •••• {paymentMethod.cardLast4}
+                        •••• •••• •••• {defaultPaymentMethod.cardLast4}
                       </p>
                       <p className="text-xs text-slate-500">
-                        Expires {paymentMethod.cardExpMonth}/{paymentMethod.cardExpYear}
+                        Expires {defaultPaymentMethod.cardExpMonth}/{defaultPaymentMethod.cardExpYear}
                       </p>
                     </div>
-                    {paymentMethod.isDefault && (
+                    {defaultPaymentMethod.isDefault && (
                       <span className="px-2 py-0.5 text-2xs font-mono uppercase tracking-wider bg-cyber-500/10 text-cyber-600 dark:text-cyber-400 border border-cyber-500/30 rounded">
                         Default
                       </span>
                     )}
                   </div>
+                  {paymentMethods.length > 1 && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      +{paymentMethods.length - 1} more payment method{paymentMethods.length > 2 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-4 text-center">
@@ -364,8 +393,11 @@ export default function Billing() {
                 </div>
               )}
 
-              <button className="w-full btn btn-secondary">
-                {paymentMethod ? 'Manage Payment Methods' : 'Add Payment Method'}
+              <button
+                onClick={() => setShowPaymentManager(true)}
+                className="w-full btn btn-secondary"
+              >
+                {defaultPaymentMethod ? 'Manage Payment Methods' : 'Add Payment Method'}
               </button>
             </div>
           </div>
@@ -378,29 +410,39 @@ export default function Billing() {
               Usage Overview
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <UsageBar
-                current={usage.currentServers}
-                max={usage.maxServers}
-                label="Servers"
-              />
-              <UsageBar
-                current={usage.currentMembers}
-                max={usage.maxMembers}
-                label="Team Members"
-              />
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono uppercase tracking-wider text-slate-500">Version History</span>
-                  <span className="font-display font-bold text-slate-900 dark:text-white">
-                    {usage.versionRetentionDays === 2147483647 ? 'Forever' : `${usage.versionRetentionDays} days`}
-                  </span>
-                </div>
-                <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-cyber-500/50 w-full" />
+            {loadingUsage && !usage ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <LoadingSkeleton className="h-12 w-full" />
+                <LoadingSkeleton className="h-12 w-full" />
+                <LoadingSkeleton className="h-12 w-full" />
+              </div>
+            ) : usage ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <UsageBar
+                  current={usage.currentServers}
+                  max={usage.maxServers}
+                  label="Servers"
+                />
+                <UsageBar
+                  current={usage.currentMembers}
+                  max={usage.maxMembers}
+                  label="Team Members"
+                />
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-500">Version History</span>
+                    <span className="font-display font-bold text-slate-900 dark:text-white">
+                      {usage.versionRetentionDays === 2147483647 ? 'Forever' : `${usage.versionRetentionDays} days`}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-cyber-500/50 w-full" />
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-slate-500 text-center py-4">Usage data unavailable</p>
+            )}
           </div>
         </div>
 
@@ -412,7 +454,12 @@ export default function Billing() {
             </h2>
           </div>
 
-          {invoices.length > 0 ? (
+          {loadingInvoices && invoices.length === 0 ? (
+            <div className="p-4 space-y-4">
+              <LoadingSkeleton className="h-16 w-full" />
+              <LoadingSkeleton className="h-16 w-full" />
+            </div>
+          ) : invoices.length > 0 ? (
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {invoices.map((invoice) => (
                 <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -486,7 +533,7 @@ export default function Billing() {
       </div>
 
       {/* Cancel Subscription Modal */}
-      {showCancelModal && (
+      {showCancelModal && subscription && (
         <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
           <div className="relative w-full max-w-md mx-4 animate-slide-up">
             {/* Corner accents */}
@@ -525,19 +572,48 @@ export default function Billing() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowCancelModal(false)}
-                    className="flex-1 btn btn-secondary"
+                    disabled={actionLoading}
+                    className="flex-1 btn btn-secondary disabled:opacity-50"
                   >
                     Keep Subscription
                   </button>
                   <button
                     onClick={handleCancelSubscription}
-                    className="flex-1 btn btn-danger"
+                    disabled={actionLoading}
+                    className="flex-1 btn btn-danger disabled:opacity-50"
                   >
-                    Cancel Subscription
+                    {actionLoading ? 'Cancelling...' : 'Cancel Subscription'}
                   </button>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Method Manager Modal */}
+      {showPaymentManager && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="relative w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto animate-slide-up">
+            {/* Close button */}
+            <button
+              onClick={() => setShowPaymentManager(false)}
+              className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-white dark:bg-slate-900 rounded-full shadow-lg"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <PaymentMethodManager
+              paymentMethods={paymentMethods}
+              onAddPaymentMethod={async (pmId, setAsDefault) => {
+                await addPaymentMethod(pmId, setAsDefault);
+              }}
+              onRemovePaymentMethod={removePaymentMethod}
+              onSetDefaultPaymentMethod={setDefaultPaymentMethod}
+              loading={loadingPaymentMethods}
+            />
           </div>
         </div>
       )}

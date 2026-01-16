@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import CardInput from './CardInput';
+import { StripeProvider } from '../providers/StripeProvider';
 
 interface PaymentMethod {
   id: string;
@@ -50,6 +52,9 @@ export default function PaymentMethodManager({
   const [showAddModal, setShowAddModal] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
+  const [addingCard, setAddingCard] = useState(false);
+  const [setAsDefault, setSetAsDefault] = useState(true);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const handleRemove = async (id: string) => {
     if (!confirm('Are you sure you want to remove this payment method?')) return;
@@ -68,6 +73,31 @@ export default function PaymentMethodManager({
     } finally {
       setSettingDefaultId(null);
     }
+  };
+
+  const handleAddCard = async (paymentMethodId: string) => {
+    setAddingCard(true);
+    setAddError(null);
+    try {
+      await onAddPaymentMethod(paymentMethodId, setAsDefault);
+      setShowAddModal(false);
+      setSetAsDefault(true);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : 'Failed to add card');
+    } finally {
+      setAddingCard(false);
+    }
+  };
+
+  const handleOpenModal = () => {
+    setShowAddModal(true);
+    setAddError(null);
+    setSetAsDefault(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setAddError(null);
   };
 
   const isExpiringSoon = (month: number, year: number) => {
@@ -97,7 +127,7 @@ export default function PaymentMethodManager({
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={handleOpenModal}
           className="btn btn-primary flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -201,7 +231,7 @@ export default function PaymentMethodManager({
             No payment methods saved
           </p>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={handleOpenModal}
             className="btn btn-primary"
           >
             Add Your First Card
@@ -211,83 +241,72 @@ export default function PaymentMethodManager({
 
       {/* Add Payment Method Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[70] animate-fade-in">
-          <div className="relative w-full max-w-md mx-4 animate-slide-up">
-            {/* Corner accents */}
-            <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />
-            <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-cyber-500" />
-            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-cyber-500" />
-            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-cyber-500" />
+        <StripeProvider>
+          <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[70] animate-fade-in">
+            <div className="relative w-full max-w-md mx-4 animate-slide-up">
+              {/* Corner accents */}
+              <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />
+              <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-cyber-500" />
+              <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-cyber-500" />
+              <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-cyber-500" />
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl dark:shadow-panel overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl dark:shadow-panel overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
 
-              <div className="p-6">
-                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
-                  Add Payment Method
-                </h3>
-                <p className="text-slate-500 text-sm font-mono uppercase tracking-wider mb-6">
-                  Secure card entry powered by Stripe
-                </p>
-
-                {/* Stripe Elements would be integrated here */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6 border-2 border-dashed border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-center gap-3 text-slate-400">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    <span className="text-sm">Stripe Elements Card Input</span>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
+                        Add Payment Method
+                      </h3>
+                      <p className="text-slate-500 text-sm">
+                        Secure card entry powered by Stripe
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleCloseModal}
+                      className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
-                  <p className="text-center text-xs text-slate-500 mt-3">
-                    Card details are securely processed by Stripe
-                  </p>
-                </div>
 
-                {/* Set as default checkbox */}
-                <label className="flex items-center gap-3 mb-6 cursor-pointer group">
-                  <div className="relative">
-                    <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded peer-checked:border-cyber-500 peer-checked:bg-cyber-500 transition-colors" />
-                    <svg className="absolute top-0.5 left-0.5 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                    Set as default payment method
-                  </span>
-                </label>
+                  {/* Error display */}
+                  {addError && (
+                    <div className="mb-4 p-3 bg-status-error/10 border border-status-error/30 rounded-lg flex items-center gap-2">
+                      <svg className="w-4 h-4 text-status-error flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-status-error text-sm">{addError}</p>
+                    </div>
+                  )}
 
-                {/* Security note */}
-                <div className="flex items-start gap-2 text-xs text-slate-500 mb-6">
-                  <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span>
-                    Your payment information is encrypted and securely stored by Stripe. We never store your full card number.
-                  </span>
-                </div>
+                  {/* Card Input */}
+                  <CardInput
+                    onPaymentMethodCreated={handleAddCard}
+                    onError={(err) => setAddError(err)}
+                    loading={addingCard}
+                    buttonText="Add Card"
+                    showSetDefault={true}
+                    defaultSetAsDefault={setAsDefault}
+                    onSetAsDefaultChange={setSetAsDefault}
+                  />
 
-                <div className="flex gap-3">
+                  {/* Cancel button */}
                   <button
-                    onClick={() => setShowAddModal(false)}
-                    className="flex-1 btn btn-secondary"
+                    onClick={handleCloseModal}
+                    disabled={addingCard}
+                    className="w-full mt-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50"
                   >
                     Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      // TODO: Integrate with Stripe Elements
-                      setShowAddModal(false);
-                    }}
-                    className="flex-1 btn btn-primary"
-                  >
-                    Add Card
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </StripeProvider>
       )}
     </div>
   );
