@@ -30,9 +30,9 @@ function isBackendUnavailable(error: AxiosError): boolean {
     return true;
   }
 
-  // Backend gateway errors (Render warmup)
+  // Backend errors (Render warmup or internal errors)
   const status = error.response?.status;
-  if (status === 502 || status === 503 || status === 504) {
+  if (status === 500 || status === 502 || status === 503 || status === 504) {
     return true;
   }
 
