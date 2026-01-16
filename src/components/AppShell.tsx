@@ -147,7 +147,10 @@ export default function AppShell({ children }: AppShellProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-slate-200 dark:border-slate-800/50 overflow-hidden">
+      <div className={clsx(
+        'flex items-center gap-3 h-16 border-b border-slate-200 dark:border-slate-800/50',
+        sidebarOpen ? 'px-4' : 'justify-center'
+      )}>
         <div className="relative flex-shrink-0">
           <div className="w-9 h-9 rounded-lg border border-cyber-500/30 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center shadow-sm">
             <svg className="w-5 h-5 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,9 +159,11 @@ export default function AppShell({ children }: AppShellProps) {
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-cyber-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
         </div>
-        <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white whitespace-nowrap">
-          CONFIG<span className="text-cyber-500">TOOL</span>
-        </span>
+        {sidebarOpen && (
+          <span className="font-display text-lg font-bold tracking-wide text-slate-900 dark:text-white whitespace-nowrap">
+            CONFIG<span className="text-cyber-500">TOOL</span>
+          </span>
+        )}
       </div>
 
       {/* Navigation */}
@@ -188,10 +193,11 @@ export default function AppShell({ children }: AppShellProps) {
                     <Link
                       to={item.path}
                       className={clsx(
-                        'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 overflow-hidden',
+                        'group flex items-center gap-3 py-2.5 rounded-lg transition-all duration-200',
+                        sidebarOpen ? 'px-3' : 'justify-center px-2',
                         active
-                          ? 'bg-cyber-500/10 text-cyber-600 dark:text-cyber-400 border border-cyber-500/20'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white border border-transparent'
+                          ? 'bg-cyber-500/10 text-cyber-600 dark:text-cyber-400'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
                       )}
                       title={!sidebarOpen ? item.label : undefined}
                     >
@@ -201,13 +207,17 @@ export default function AppShell({ children }: AppShellProps) {
                       )}>
                         {item.icon}
                       </span>
-                      <span className="font-medium text-sm whitespace-nowrap">
-                        {item.label}
-                      </span>
-                      {item.badge && sidebarOpen && (
-                        <span className="ml-auto px-2 py-0.5 text-2xs font-mono font-semibold bg-cyber-500/20 text-cyber-600 dark:text-cyber-400 rounded-full">
-                          {item.badge}
-                        </span>
+                      {sidebarOpen && (
+                        <>
+                          <span className="font-medium text-sm whitespace-nowrap">
+                            {item.label}
+                          </span>
+                          {item.badge && (
+                            <span className="ml-auto px-2 py-0.5 text-2xs font-mono font-semibold bg-cyber-500/20 text-cyber-600 dark:text-cyber-400 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
                       )}
                     </Link>
                   </li>
