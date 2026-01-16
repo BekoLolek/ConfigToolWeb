@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest } from '../types';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -244,4 +244,23 @@ export const filePermissionApi = {
   // Check current user's access to a specific path
   checkAccess: (serverId: string, path: string) =>
     api.get<PathPermissions>(`/api/servers/${serverId}/file-permissions/check`, { params: { path } }),
+};
+
+// Plugin Alias API
+export const pluginAliasApi = {
+  // List all aliases for a server
+  list: (serverId: string) =>
+    api.get<PluginAlias[]>(`/api/servers/${serverId}/plugin-aliases`),
+
+  // Create a new alias
+  create: (serverId: string, data: CreatePluginAliasRequest) =>
+    api.post<PluginAlias>(`/api/servers/${serverId}/plugin-aliases`, data),
+
+  // Update an alias
+  update: (serverId: string, aliasId: string, data: CreatePluginAliasRequest) =>
+    api.put<PluginAlias>(`/api/servers/${serverId}/plugin-aliases/${aliasId}`, data),
+
+  // Delete an alias
+  delete: (serverId: string, aliasId: string) =>
+    api.delete(`/api/servers/${serverId}/plugin-aliases/${aliasId}`),
 };

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useServerStore } from '../stores/serverStore';
+import { useAuthStore } from '../stores/authStore';
 import type { Server } from '../types';
+import PluginAliases from './PluginAliases';
 
 interface ServerSettingsProps {
   server: Server;
@@ -10,6 +12,8 @@ interface ServerSettingsProps {
 
 export default function ServerSettings({ server, isOpen, onClose }: ServerSettingsProps) {
   const { updateServer, groups, fetchGroups } = useServerStore();
+  const { user } = useAuthStore();
+  const isOwner = user?.id === server.ownerId;
   const [name, setName] = useState(server.name);
   const [groupName, setGroupName] = useState(server.groupName || '');
   const [notes, setNotes] = useState(server.notes || '');
@@ -110,6 +114,11 @@ export default function ServerSettings({ server, isOpen, onClose }: ServerSettin
                   <div className="text-xs font-mono text-slate-500">Last File Edit</div>
                 </div>
               </div>
+            </div>
+
+            {/* Plugin Aliases Section */}
+            <div className="mb-6">
+              <PluginAliases serverId={server.id} isOwner={isOwner} />
             </div>
 
             {/* Server Name */}

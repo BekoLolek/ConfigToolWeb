@@ -370,3 +370,17 @@ export interface PathPermissions {
   canRead: boolean;
   canWrite: boolean;
 }
+
+// Plugin Alias types
+export interface PluginAlias {
+  id: string;
+  serverId: string;
+  folderName: string;
+  commandPrefix: string;
+  createdAt: string;
+}
+
+export interface CreatePluginAliasRequest {
+  folderName: string;
+  commandPrefix: string;
+}
