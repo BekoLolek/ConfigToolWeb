@@ -401,13 +401,13 @@ export default function ServerView() {
         <button
           onClick={toggleFileTree}
           className={clsx(
-            'group flex flex-col items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all duration-200 flex-shrink-0',
+            'group flex flex-col items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-200 flex-shrink-0',
             isFileTreeCollapsed ? 'w-10 bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700/50' : 'w-5 bg-slate-50 dark:bg-slate-900/50'
           )}
           title={isFileTreeCollapsed ? 'Show files' : 'Hide files'}
         >
           {/* Icon */}
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center text-cyber-500 dark:text-cyber-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.5)] hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.8)] transition-all">
             {isFileTreeCollapsed ? (
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -420,7 +420,7 @@ export default function ServerView() {
           </div>
           {/* Vertical label when collapsed */}
           {isFileTreeCollapsed && (
-            <span className="text-2xs font-mono uppercase tracking-wider mt-1 writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            <span className="text-2xs font-mono uppercase tracking-wider mt-1 writing-mode-vertical text-cyber-500 dark:text-cyber-400" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               Files
             </span>
           )}
@@ -441,13 +441,13 @@ export default function ServerView() {
         <button
           onClick={toggleHistory}
           className={clsx(
-            'group flex flex-col items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all duration-200 flex-shrink-0',
+            'group flex flex-col items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-200 flex-shrink-0',
             isHistoryCollapsed ? 'w-10 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700/50' : 'w-5 bg-slate-50 dark:bg-slate-900/50'
           )}
           title={isHistoryCollapsed ? 'Show history' : 'Hide history'}
         >
           {/* Icon */}
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center text-cyber-500 dark:text-cyber-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.5)] hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.8)] transition-all">
             {isHistoryCollapsed ? (
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -460,7 +460,7 @@ export default function ServerView() {
           </div>
           {/* Vertical label when collapsed */}
           {isHistoryCollapsed && (
-            <span className="text-2xs font-mono uppercase tracking-wider mt-1" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            <span className="text-2xs font-mono uppercase tracking-wider mt-1 text-cyber-500 dark:text-cyber-400" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               History
             </span>
           )}
