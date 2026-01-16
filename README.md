@@ -56,16 +56,6 @@ React SPA for ConfigTool - a web-based Minecraft server config management platfo
 - Invoice history
 - Payment method management
 
-## Scripts
-
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
-| `npm run type-check` | TypeScript type checking |
-
 ## Project Structure
 
 ```
