@@ -195,9 +195,9 @@ export default function ServerView() {
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 flex flex-col flex-1 text-slate-900 dark:text-white">
-      {/* Header */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 py-0 flex items-center gap-4 h-14 flex-shrink-0">
+    <div className="bg-slate-50 dark:bg-slate-950 flex flex-col h-full overflow-hidden text-slate-900 dark:text-white">
+      {/* Header - h-16 matches AppShell sidebar header */}
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 py-0 flex items-center gap-4 h-16 flex-shrink-0">
         {/* Server info */}
         <div className="flex items-center gap-3">
           <div className={`status-led ${currentServer.online ? 'status-led-online' : 'status-led-offline'}`} />
@@ -357,110 +357,152 @@ export default function ServerView() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* File Tree Panel */}
-        <aside
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* File Tree Panel - slides off-screen when collapsed */}
+        <div
           className={clsx(
-            'bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-out overflow-hidden',
-            isFileTreeCollapsed ? 'w-0' : 'w-72'
+            'flex-shrink-0 transition-[margin] duration-300 ease-out',
+            isFileTreeCollapsed ? '-ml-72' : 'ml-0'
           )}
         >
-          {/* Panel header */}
-          <div className="panel-header flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              <span>Files</span>
+          <aside className="w-72 bg-white dark:bg-slate-900/95 flex flex-col border-r border-slate-200 dark:border-slate-700/50 h-full">
+            {/* Panel header */}
+            <div className="h-16 px-3 flex items-center justify-between flex-shrink-0 relative bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <svg className="w-4 h-4 text-cyber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <span className="font-display font-semibold text-sm uppercase tracking-wider text-slate-600 dark:text-slate-400 whitespace-nowrap">Files</span>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <FileUpload
+                  serverId={serverId!}
+                  currentDirectory="plugins"
+                  onUploadComplete={() => clearFileCache()}
+                />
+                <RecentFiles serverId={serverId!} serverName={currentServer.name} />
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <FileUpload
+            {/* File tree content */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+              <FileTree
                 serverId={serverId!}
-                currentDirectory="plugins"
-                onUploadComplete={() => clearFileCache()}
+                fileCache={fileCache}
+                loadingDirs={loadingDirs}
+                loadDirectory={handleLoadDirectory}
+                selectedFile={activeTab?.filePath || null}
+                onSelect={handleFileSelect}
               />
-              <RecentFiles serverId={serverId!} serverName={currentServer.name} />
             </div>
-          </div>
-          {/* File tree content */}
-          <div className="flex-1 overflow-y-auto">
-            <FileTree
-              serverId={serverId!}
-              fileCache={fileCache}
-              loadingDirs={loadingDirs}
-              loadDirectory={handleLoadDirectory}
-              selectedFile={activeTab?.filePath || null}
-              onSelect={handleFileSelect}
-            />
-          </div>
-        </aside>
+          </aside>
+        </div>
 
         {/* File tree collapse toggle */}
         <button
           onClick={toggleFileTree}
           className={clsx(
-            'w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all flex-shrink-0',
-            isFileTreeCollapsed && 'border-l'
+            'group flex flex-col items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-200 flex-shrink-0',
+            isFileTreeCollapsed ? 'w-10 bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700/50' : 'w-5 bg-slate-50 dark:bg-slate-900/50'
           )}
           title={isFileTreeCollapsed ? 'Show files' : 'Hide files'}
         >
-          <svg
-            className={clsx('w-4 h-4 transition-transform duration-300', isFileTreeCollapsed ? 'rotate-180' : '')}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          {/* Icon */}
+          <div className="flex items-center justify-center text-cyber-500 dark:text-cyber-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.5)] hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.8)] transition-all">
+            {isFileTreeCollapsed ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            ) : (
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            )}
+          </div>
+          {/* Vertical label when collapsed */}
+          {isFileTreeCollapsed && (
+            <span className="text-2xs font-mono uppercase tracking-wider mt-1 writing-mode-vertical text-cyber-500 dark:text-cyber-400" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              Files
+            </span>
+          )}
         </button>
 
-        {/* Editor area */}
-        <main className="flex-1 flex overflow-hidden bg-slate-100 dark:bg-slate-950">
+        {/* Editor area - with subtle left/right borders for separation */}
+        <main className="flex-1 flex overflow-hidden bg-slate-100 dark:bg-slate-950 min-w-0">
           <EditorPane paneIndex={0} />
           {isSplit && (
             <>
-              <div className="w-px bg-slate-700" />
+              <div className="w-px bg-slate-300 dark:bg-slate-700" />
               <EditorPane paneIndex={1} />
             </>
           )}
         </main>
 
         {/* History collapse toggle */}
-        {activeTab && (
-          <button
-            onClick={toggleHistory}
-            className={clsx(
-              'w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 transition-all flex-shrink-0',
-              isHistoryCollapsed && 'border-r'
+        <button
+          onClick={toggleHistory}
+          className={clsx(
+            'group flex flex-col items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-200 flex-shrink-0',
+            isHistoryCollapsed ? 'w-10 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700/50' : 'w-5 bg-slate-50 dark:bg-slate-900/50'
+          )}
+          title={isHistoryCollapsed ? 'Show history' : 'Hide history'}
+        >
+          {/* Icon */}
+          <div className="flex items-center justify-center text-cyber-500 dark:text-cyber-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.5)] hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.8)] transition-all">
+            {isHistoryCollapsed ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
             )}
-            title={isHistoryCollapsed ? 'Show history' : 'Hide history'}
-          >
-            <svg
-              className={clsx('w-4 h-4 transition-transform duration-300', isHistoryCollapsed ? '' : 'rotate-180')}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        )}
+          </div>
+          {/* Vertical label when collapsed */}
+          {isHistoryCollapsed && (
+            <span className="text-2xs font-mono uppercase tracking-wider mt-1 text-cyber-500 dark:text-cyber-400" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              History
+            </span>
+          )}
+        </button>
 
-        {/* Version History Panel */}
-        {activeTab && (
-          <aside
-            className={clsx(
-              'bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300 ease-out flex flex-col',
-              isHistoryCollapsed ? 'w-0' : 'w-80'
+        {/* Version History Panel - slides off-screen when collapsed */}
+        <div
+          className={clsx(
+            'flex-shrink-0 transition-[margin] duration-300 ease-out',
+            isHistoryCollapsed ? '-mr-80' : 'mr-0'
+          )}
+        >
+          <aside className="w-80 bg-white dark:bg-slate-900/95 flex flex-col border-l border-slate-200 dark:border-slate-700/50 h-full">
+            {activeTab ? (
+              <VersionHistory
+                serverId={serverId!}
+                filePath={activeTab.filePath}
+                onRestore={handleRestore}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col">
+                {/* Empty state header */}
+                <div className="h-16 px-3 flex items-center gap-2 flex-shrink-0 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                  <svg className="w-4 h-4 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-display font-semibold text-sm uppercase tracking-wider text-slate-600 dark:text-slate-400">History</span>
+                </div>
+                {/* Empty state content */}
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="text-center">
+                    <svg className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-slate-400 dark:text-slate-600 text-xs font-mono uppercase tracking-wider">Open a file</p>
+                    <p className="text-slate-400 dark:text-slate-600 text-xs mt-1">to see version history</p>
+                  </div>
+                </div>
+              </div>
             )}
-          >
-            <VersionHistory
-              serverId={serverId!}
-              filePath={activeTab.filePath}
-              onRestore={handleRestore}
-            />
           </aside>
-        )}
+        </div>
       </div>
 
       {/* Search Modal */}

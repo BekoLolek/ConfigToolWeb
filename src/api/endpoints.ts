@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest } from '../types';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -18,8 +18,8 @@ export interface AddPaymentMethodRequest {
   paymentMethodId: string;
   setAsDefault?: boolean;
 }
-export const healthApi = { check: () => api.get('/api/health') };
-export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }) };
+export const healthApi = { check: () => api.get('/actuator/health') };
+export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }), verifyEmail: (token: string) => api.post('/api/auth/verify-email', { token }) };
 export const serverApi = {
   list: () => api.get<Server[]>('/api/servers'),
   create: (data: CreateServerRequest) => api.post<Server>('/api/servers', data),
@@ -73,6 +73,9 @@ export const userApi = {
 
   // Update profile
   updateProfile: (data: { email?: string }) => api.patch('/api/user/profile', data),
+
+  // Resend email verification
+  resendVerification: () => api.post('/api/user/resend-verification'),
 };
 
 // Billing API
@@ -244,4 +247,23 @@ export const filePermissionApi = {
   // Check current user's access to a specific path
   checkAccess: (serverId: string, path: string) =>
     api.get<PathPermissions>(`/api/servers/${serverId}/file-permissions/check`, { params: { path } }),
+};
+
+// Plugin Alias API
+export const pluginAliasApi = {
+  // List all aliases for a server
+  list: (serverId: string) =>
+    api.get<PluginAlias[]>(`/api/servers/${serverId}/plugin-aliases`),
+
+  // Create a new alias
+  create: (serverId: string, data: CreatePluginAliasRequest) =>
+    api.post<PluginAlias>(`/api/servers/${serverId}/plugin-aliases`, data),
+
+  // Update an alias
+  update: (serverId: string, aliasId: string, data: CreatePluginAliasRequest) =>
+    api.put<PluginAlias>(`/api/servers/${serverId}/plugin-aliases/${aliasId}`, data),
+
+  // Delete an alias
+  delete: (serverId: string, aliasId: string) =>
+    api.delete(`/api/servers/${serverId}/plugin-aliases/${aliasId}`),
 };

@@ -102,7 +102,7 @@ export default function JoinServerModal({ isOpen, onClose, onJoin }: JoinServerM
 
   return (
     <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[70] animate-fade-in"
       onClick={handleBackdropClick}
     >
       <div className="relative w-full max-w-md mx-4 animate-slide-up">

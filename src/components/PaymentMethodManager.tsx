@@ -211,7 +211,7 @@ export default function PaymentMethodManager({
 
       {/* Add Payment Method Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[70] animate-fade-in">
           <div className="relative w-full max-w-md mx-4 animate-slide-up">
             {/* Corner accents */}
             <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyber-500" />

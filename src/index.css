@@ -153,6 +153,20 @@
     text-shadow: 0 0 10px currentColor;
   }
 
+  /* Panel toggle handle styling */
+  .panel-toggle {
+    @apply relative flex items-center justify-center transition-all duration-200;
+  }
+
+  .panel-toggle::before {
+    content: '';
+    @apply absolute inset-y-2 w-0.5 bg-slate-600 rounded-full transition-colors;
+  }
+
+  .panel-toggle:hover::before {
+    @apply bg-cyber-500/50;
+  }
+
   /* Noise texture overlay */
   .noise {
     position: relative;

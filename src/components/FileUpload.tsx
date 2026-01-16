@@ -76,8 +76,8 @@ export default function FileUpload({ serverId, currentDirectory, onUploadComplet
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center gap-2 px-2 py-1 text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all disabled:opacity-50"
-        title="Upload config file"
+        className="flex items-center justify-center w-8 h-8 text-slate-500 dark:text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all disabled:opacity-50"
+        title="Upload config file (.yml, .yaml, .json)"
       >
         {uploading ? (
           <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -89,7 +89,6 @@ export default function FileUpload({ serverId, currentDirectory, onUploadComplet
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
         )}
-        <span className="hidden sm:inline">Upload</span>
       </button>
       {error && (
         <div className="absolute top-full left-0 mt-1 px-2 py-1 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400 whitespace-nowrap z-10">

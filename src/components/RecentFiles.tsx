@@ -81,24 +81,25 @@ export default function RecentFiles({ serverId, serverName, showServerName = fal
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Trigger button */}
+      {/* Trigger button - icon only with badge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          'flex items-center gap-2 px-3 py-1.5 rounded transition-all',
-          'bg-slate-800/50 border border-slate-700 hover:border-slate-600',
-          'text-slate-400 hover:text-white',
-          isOpen && 'border-cyber-500/50 text-white'
+          'flex items-center gap-1 h-8 px-2 rounded transition-all',
+          'hover:bg-slate-100 dark:hover:bg-slate-800',
+          'text-slate-500 dark:text-slate-400 hover:text-cyber-500 dark:hover:text-cyber-400',
+          isOpen && 'bg-slate-100 dark:bg-slate-800 text-cyber-500 dark:text-cyber-400'
         )}
+        title="Recent files"
       >
         {/* Clock icon */}
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span className="font-display text-xs uppercase tracking-wider">Recent</span>
+        {/* Badge - shows count up to 9, then 9+ */}
         {displayFiles.length > 0 && (
-          <span className="text-2xs bg-slate-700 px-1.5 py-0.5 rounded-full font-mono">
-            {displayFiles.length}
+          <span className="text-2xs bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded-full font-mono min-w-[1.25rem] text-center">
+            {displayFiles.length > 9 ? '9+' : displayFiles.length}
           </span>
         )}
         {/* Chevron */}
@@ -112,9 +113,9 @@ export default function RecentFiles({ serverId, serverName, showServerName = fal
         </svg>
       </button>
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu - z-[60] ensures it appears above sidebar (z-40) */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden z-50 animate-slide-up">
+        <div className="absolute top-full right-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-panel overflow-hidden z-[60] animate-slide-up">
           {/* Header */}
           <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between">
             <span className="font-display text-xs uppercase tracking-wider text-slate-400">
