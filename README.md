@@ -56,21 +56,6 @@ React SPA for ConfigTool - a web-based Minecraft server config management platfo
 - Invoice history
 - Payment method management
 
-## Quick Start
-
-```bash
-# Install dependencies
-npm install
-
-# Create .env.local
-echo "VITE_API_URL=http://localhost:8080" > .env.local
-
-# Start dev server
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173)
-
 ## Scripts
 
 | Script | Description |
@@ -81,12 +66,6 @@ Open [http://localhost:5173](http://localhost:5173)
 | `npm run lint` | Run ESLint |
 | `npm run type-check` | TypeScript type checking |
 
-## Deployment (Vercel)
-
-1. Import repo at [vercel.com](https://vercel.com)
-2. Set `VITE_API_URL` = `https://your-backend.onrender.com`
-3. Deploy
-
 ## Project Structure
 
 ```
@@ -95,6 +74,7 @@ src/
 │   ├── client.ts          # Axios instance
 │   └── endpoints.ts       # API functions
 ├── components/            # UI components
+│   ├── landing/           # Landing page components
 │   ├── CollaboratorList.tsx
 │   ├── ConfigEditor.tsx
 │   ├── FileTree.tsx
@@ -104,50 +84,28 @@ src/
 │   ├── VersionHistory.tsx
 │   └── ...
 ├── pages/                 # Route pages
-│   ├── Billing.tsx
-│   ├── Dashboard.tsx
-│   ├── Login.tsx
-│   ├── Pricing.tsx
-│   ├── Profile.tsx
-│   └── ServerView.tsx
 ├── stores/                # Zustand stores
-│   ├── authStore.ts
-│   ├── billingStore.ts
-│   ├── editorStore.ts
-│   ├── serverStore.ts
-│   └── toastStore.ts
-├── types/                 # TypeScript types
 └── App.tsx               # Root component
 ```
 
-## Pages
+## Routes
 
-| Route | Description |
-|-------|-------------|
-| `/login` | Authentication |
-| `/` | Dashboard (server list) |
-| `/servers/:id` | Server view (file editor) |
-| `/pricing` | Public pricing |
-| `/billing` | Subscription management |
-| `/profile` | User settings |
-
-## State Stores
-
-### authStore
-- `user`, `accessToken`, `refreshToken`
-- `login()`, `register()`, `logout()`
-
-### serverStore
-- `servers`, `currentServer`, `files`
-- `fetchServers()`, `fetchFiles()`, `updateServer()`
-
-### editorStore
-- `tabs`, `activeTabId`, `splitView`
-- `openFile()`, `closeTab()`, `updateContent()`
-
-### billingStore
-- `subscription`, `invoices`, `usage`
-- `fetchSubscription()`, `cancelSubscription()`
+| Route | Access | Description |
+|-------|--------|-------------|
+| `/` | Public | Landing page (unauthenticated) / Dashboard (authenticated) |
+| `/login` | Public | Authentication |
+| `/pricing` | Public | Plan pricing |
+| `/docs` | Public | Documentation |
+| `/servers/:serverId` | Protected | Server file editor |
+| `/templates` | Protected | User template library |
+| `/templates/:templateId` | Protected | Template detail view |
+| `/marketplace` | Protected | Community template marketplace |
+| `/billing` | Protected | Subscription management |
+| `/profile` | Protected | User settings |
+| `/api-keys` | Protected | API key management |
+| `/webhooks` | Protected | Webhook configuration |
+| `/scheduled-backups` | Protected | Backup schedules |
+| `/git-configs` | Protected | Git sync configuration |
 
 ## Keyboard Shortcuts
 
@@ -158,13 +116,6 @@ src/
 | `Ctrl+W` | Close tab |
 | `Ctrl+Shift+F` | Global search |
 | `Ctrl+Alt+W` | Toggle split view |
-
-## Styling
-
-Tailwind CSS with cyber theme:
-- Custom colors: `cyber-400` to `cyber-700`
-- Dark/light mode toggle
-- Custom effects: `shadow-glow`, `bg-ops-grid`
 
 ---
 
