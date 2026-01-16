@@ -16,6 +16,7 @@ import GitConfigs from './pages/GitConfigs';
 import Marketplace from './pages/Marketplace';
 import TemplateLibrary from './pages/TemplateLibrary';
 import TemplateDetail from './pages/TemplateDetail';
+import VerifyEmail from './pages/VerifyEmail';
 import ToastContainer from './components/Toast';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/pricing" element={<PublicRoute><Pricing /></PublicRoute>} />
         <Route path="/docs" element={<PublicRoute><Docs /></PublicRoute>} />
+        <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
 
         {/* Root route - Landing for unauthenticated, Dashboard for authenticated */}
         <Route path="/" element={<RootRoute />} />

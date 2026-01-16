@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import ThemeToggle from './ThemeToggle';
+import EmailVerificationBanner from './EmailVerificationBanner';
 
 interface NavItem {
   label: string;
@@ -327,6 +328,7 @@ export default function AppShell({ children }: AppShellProps) {
           ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-[72px]'}
         `}
       >
+        <EmailVerificationBanner />
         {children}
       </main>
     </div>

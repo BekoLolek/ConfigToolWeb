@@ -19,7 +19,7 @@ export interface AddPaymentMethodRequest {
   setAsDefault?: boolean;
 }
 export const healthApi = { check: () => api.get('/api/health') };
-export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }) };
+export const authApi = { register: (e: string, p: string) => api.post<AuthResponse>('/api/auth/register', { email: e, password: p }), login: (e: string, p: string) => api.post<AuthResponse>('/api/auth/login', { email: e, password: p }), logout: (t: string) => api.post('/api/auth/logout', { refreshToken: t }), verifyEmail: (token: string) => api.post('/api/auth/verify-email', { token }) };
 export const serverApi = {
   list: () => api.get<Server[]>('/api/servers'),
   create: (data: CreateServerRequest) => api.post<Server>('/api/servers', data),
@@ -73,6 +73,9 @@ export const userApi = {
 
   // Update profile
   updateProfile: (data: { email?: string }) => api.patch('/api/user/profile', data),
+
+  // Resend email verification
+  resendVerification: () => api.post('/api/user/resend-verification'),
 };
 
 // Billing API
