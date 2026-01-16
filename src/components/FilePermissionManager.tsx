@@ -44,7 +44,7 @@ export default function FilePermissionManager({ serverId }: FilePermissionManage
       setRestrictions(restrictionsRes.data);
       setCollaborators(collaboratorsRes.data);
     } catch (error) {
-      addToast('Failed to load permissions', 'error');
+      addToast({ message: 'Failed to load permissions', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export default function FilePermissionManager({ serverId }: FilePermissionManage
 
   const handleAddRestriction = async () => {
     if (!selectedCollaborator || !pathPattern) {
-      addToast('Please select a collaborator and enter a path', 'warning');
+      addToast({ message: 'Please select a collaborator and enter a path', type: 'warning' });
       return;
     }
 
@@ -64,12 +64,12 @@ export default function FilePermissionManager({ serverId }: FilePermissionManage
         restrictionType: restrictionType,
       });
       setRestrictions([...restrictions, response.data]);
-      addToast('File restriction added', 'success');
+      addToast({ message: 'File restriction added', type: 'success' });
       setIsAddingNew(false);
       setSelectedCollaborator('');
       setPathPattern('plugins/');
     } catch (error: any) {
-      addToast(error.response?.data?.message || 'Failed to add restriction', 'error');
+      addToast({ message: error.response?.data?.message || 'Failed to add restriction', type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -80,9 +80,9 @@ export default function FilePermissionManager({ serverId }: FilePermissionManage
     try {
       await filePermissionApi.remove(serverId, restrictionId);
       setRestrictions(restrictions.filter((r) => r.id !== restrictionId));
-      addToast('Restriction removed', 'success');
+      addToast({ message: 'Restriction removed', type: 'success' });
     } catch (error) {
-      addToast('Failed to remove restriction', 'error');
+      addToast({ message: 'Failed to remove restriction', type: 'error' });
     } finally {
       setRemovingId(null);
     }
