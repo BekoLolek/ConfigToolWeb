@@ -31,6 +31,7 @@ interface BillingState {
   createSubscription: (plan: Plan, paymentMethodId: string, billingCycle: 'monthly' | 'yearly') => Promise<Subscription>;
   cancelSubscription: () => Promise<void>;
   resumeSubscription: () => Promise<void>;
+  cancelPendingDowngrade: () => Promise<void>;
 
   addPaymentMethod: (paymentMethodId: string, setAsDefault?: boolean) => Promise<PaymentMethod>;
   removePaymentMethod: (paymentMethodId: string) => Promise<void>;
@@ -167,6 +168,18 @@ export const useBillingStore = create<BillingState>((set, get) => ({
       set({ subscription: data, loadingSubscription: false });
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to resume subscription';
+      set({ loadingSubscription: false, error: errorMessage });
+      throw new Error(errorMessage);
+    }
+  },
+
+  cancelPendingDowngrade: async () => {
+    set({ loadingSubscription: true, error: null });
+    try {
+      const { data } = await billingApi.cancelPendingDowngrade();
+      set({ subscription: data, loadingSubscription: false });
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to cancel pending downgrade';
       set({ loadingSubscription: false, error: errorMessage });
       throw new Error(errorMessage);
     }

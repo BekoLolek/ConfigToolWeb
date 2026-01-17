@@ -71,7 +71,7 @@ export default function TrialExpiredModal() {
             Dismiss
           </button>
           <Link
-            to="/settings/billing"
+            to="/pricing"
             className="px-4 py-2 text-sm font-medium text-white bg-cyber-600 hover:bg-cyber-500 rounded transition-colors"
           >
             View Plans

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useBillingStore } from '../stores/billingStore';
 import ThemeToggle from './ThemeToggle';
 import EmailVerificationBanner from './EmailVerificationBanner';
+import TrialBanner from './TrialBanner';
+import TrialExpiredModal from './TrialExpiredModal';
 import clsx from 'clsx';
 
 interface NavItem {
@@ -109,8 +112,21 @@ export default function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, refreshToken } = useAuthStore();
+  const { subscription, fetchSubscription } = useBillingStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fetch subscription on mount
+  useEffect(() => {
+    fetchSubscription();
+  }, [fetchSubscription]);
+
+  // Dispatch trial-expired event when subscription status changes to TRIAL_EXPIRED
+  useEffect(() => {
+    if (subscription?.status === 'TRIAL_EXPIRED') {
+      window.dispatchEvent(new CustomEvent('trial-expired'));
+    }
+  }, [subscription?.status]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -351,8 +367,12 @@ export default function AppShell({ children }: AppShellProps) {
         )}
       >
         <EmailVerificationBanner />
+        <TrialBanner />
         {children}
       </main>
+
+      {/* Trial Expired Modal - shown when trial has ended */}
+      <TrialExpiredModal />
     </div>
   );
 }
