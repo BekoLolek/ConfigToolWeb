@@ -478,7 +478,7 @@ function CheckoutContent() {
                       </div>
                       <p className="text-xs text-slate-500 text-right">
                         {billingCycle === 'yearly'
-                          ? `$${(monthlyEquivalent / 100).toFixed(2)}/mo billed annually`
+                          ? `€${(monthlyEquivalent / 100).toFixed(2)}/mo billed annually`
                           : 'Billed monthly'}
                       </p>
                     </div>
