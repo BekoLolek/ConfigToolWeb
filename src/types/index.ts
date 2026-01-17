@@ -387,3 +387,24 @@ export interface CreatePluginAliasRequest {
   folderName: string;
   commandPrefix: string;
 }
+
+// Audit Log types
+export type AuditAction =
+  | 'USER_CREATED' | 'USER_UPDATED' | 'USER_DELETED'
+  | 'COLLABORATOR_ADDED' | 'COLLABORATOR_REMOVED'
+  | 'SERVER_CREATED' | 'SERVER_UPDATED' | 'SERVER_DELETED'
+  | 'SERVER_TOKEN_REGENERATED' | 'SERVER_CONNECTED' | 'SERVER_DISCONNECTED'
+  | 'FILE_CREATED' | 'FILE_UPDATED' | 'FILE_RENAMED' | 'FILE_DELETED' | 'FILE_RESTORED';
+
+export interface AuditLog {
+  id: string;
+  action: AuditAction;
+  actionDescription: string;
+  actorId: string | null;
+  actorEmail: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  targetName: string | null;
+  details: string | null;
+  createdAt: string;
+}
