@@ -2,8 +2,9 @@ import { ReactNode } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Appearance } from '@stripe/stripe-js';
 
-// Load Stripe with the publishable key from environment
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// Load Stripe only if the publishable key is configured
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // Custom appearance for Stripe Elements to match our theme
 const appearance: Appearance = {
@@ -75,6 +76,23 @@ export function StripeProvider({ children }: StripeProviderProps) {
   const isDarkMode = typeof window !== 'undefined' &&
     (document.documentElement.classList.contains('dark') ||
      window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  // Show configuration message if Stripe key is not set
+  if (!stripePromise) {
+    return (
+      <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span className="font-medium">Stripe not configured</span>
+        </div>
+        <p className="mt-2 text-sm text-amber-600/80 dark:text-amber-400/80">
+          Payment processing is unavailable. Set <code className="px-1 py-0.5 bg-amber-500/20 rounded font-mono text-xs">VITE_STRIPE_PUBLISHABLE_KEY</code> in your environment.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Elements
