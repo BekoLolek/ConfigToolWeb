@@ -34,6 +34,11 @@ import AdminBilling from './pages/admin/AdminBilling';
 import AdminSubscriptionDetail from './pages/admin/AdminSubscriptionDetail';
 import AdminSecurity from './pages/admin/AdminSecurity';
 import AdminApiKeyDetail from './pages/admin/AdminApiKeyDetail';
+// P2 Admin pages
+import AdminCollaborators from './pages/admin/AdminCollaborators';
+import AdminCollaboratorDetail from './pages/admin/AdminCollaboratorDetail';
+import AdminWebhooks from './pages/admin/AdminWebhooks';
+import AdminWebhookDetail from './pages/admin/AdminWebhookDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -105,6 +110,11 @@ export default function App() {
         <Route path="/admin/billing/:subscriptionId" element={<AdminRoute><AdminSubscriptionDetail /></AdminRoute>} />
         <Route path="/admin/security" element={<AdminRoute><AdminSecurity /></AdminRoute>} />
         <Route path="/admin/security/api-keys/:apiKeyId" element={<AdminRoute><AdminApiKeyDetail /></AdminRoute>} />
+        {/* P2 Admin routes */}
+        <Route path="/admin/collaborators" element={<AdminRoute><AdminCollaborators /></AdminRoute>} />
+        <Route path="/admin/collaborators/:collaboratorId" element={<AdminRoute><AdminCollaboratorDetail /></AdminRoute>} />
+        <Route path="/admin/webhooks" element={<AdminRoute><AdminWebhooks /></AdminRoute>} />
+        <Route path="/admin/webhooks/:webhookId" element={<AdminRoute><AdminWebhookDetail /></AdminRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

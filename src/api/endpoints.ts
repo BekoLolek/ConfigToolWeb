@@ -1,6 +1,6 @@
 import { api } from './client';
 import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction, Plan } from '../types';
-import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters } from '../types/admin';
+import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters, AdminCollaborator, AdminCollaboratorDetail, AdminCollaboratorStats, AdminCollaboratorFilters, AdminWebhook, AdminWebhookDetail, AdminWebhookStats, AdminWebhookFilters } from '../types/admin';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -440,4 +440,45 @@ export const adminSecurityApi = {
     api.get<AdminPageResponse<AdminLoginHistory>>('/api/admin/security/login-history', {
       params: { page, size, ...filters },
     }),
+};
+
+// ============================================================================
+// P2: Admin Collaborator Management API
+// ============================================================================
+export const adminCollaboratorApi = {
+  list: (page = 0, size = 20, filters?: AdminCollaboratorFilters) =>
+    api.get<AdminPageResponse<AdminCollaborator>>('/api/admin/collaborators', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (collaboratorId: string) =>
+    api.get<AdminCollaboratorDetail>(`/api/admin/collaborators/${collaboratorId}`),
+
+  getStats: () =>
+    api.get<AdminCollaboratorStats>('/api/admin/collaborators/stats'),
+
+  delete: (collaboratorId: string) =>
+    api.delete(`/api/admin/collaborators/${collaboratorId}`),
+};
+
+// ============================================================================
+// P2: Admin Webhook Management API
+// ============================================================================
+export const adminWebhookApi = {
+  list: (page = 0, size = 20, filters?: AdminWebhookFilters) =>
+    api.get<AdminPageResponse<AdminWebhook>>('/api/admin/webhooks', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (webhookId: number) =>
+    api.get<AdminWebhookDetail>(`/api/admin/webhooks/${webhookId}`),
+
+  getStats: () =>
+    api.get<AdminWebhookStats>('/api/admin/webhooks/stats'),
+
+  toggle: (webhookId: number) =>
+    api.post(`/api/admin/webhooks/${webhookId}/toggle`),
+
+  delete: (webhookId: number) =>
+    api.delete(`/api/admin/webhooks/${webhookId}`),
 };

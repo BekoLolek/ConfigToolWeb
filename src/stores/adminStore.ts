@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { adminDashboardApi, adminUserApi, adminAuditLogApi, adminTemplateApi, adminServerApi, adminBillingApi, adminSecurityApi } from '../api/endpoints';
+import { adminDashboardApi, adminUserApi, adminAuditLogApi, adminTemplateApi, adminServerApi, adminBillingApi, adminSecurityApi, adminCollaboratorApi, adminWebhookApi } from '../api/endpoints';
 import type {
   AdminDashboardStats,
   AdminRevenue,
@@ -27,6 +27,17 @@ import type {
   AdminApiKeyFilters,
   AdminLoginHistory,
   AdminLoginHistoryFilters,
+  // P2: Collaborator Types
+  AdminCollaborator,
+  AdminCollaboratorDetail,
+  AdminCollaboratorStats,
+  AdminCollaboratorFilters,
+  // P2: Webhook Types
+  AdminWebhook,
+  AdminWebhookDetail,
+  AdminWebhookStats,
+  AdminWebhookFilters,
+  WebhookType,
 } from '../types/admin';
 import type { Plan, SubscriptionStatus } from '../types';
 
@@ -101,6 +112,28 @@ interface AdminState {
   loadingApiKeyDetail: boolean;
   loadingLoginHistory: boolean;
 
+  // P2: Collaborators
+  collaborators: AdminCollaborator[];
+  collaboratorsTotal: number;
+  collaboratorsPage: number;
+  collaboratorsPageSize: number;
+  collaboratorFilters: AdminCollaboratorFilters;
+  selectedCollaborator: AdminCollaboratorDetail | null;
+  collaboratorStats: AdminCollaboratorStats | null;
+  loadingCollaborators: boolean;
+  loadingCollaboratorDetail: boolean;
+
+  // P2: Webhooks
+  webhooks: AdminWebhook[];
+  webhooksTotal: number;
+  webhooksPage: number;
+  webhooksPageSize: number;
+  webhookFilters: AdminWebhookFilters;
+  selectedWebhook: AdminWebhookDetail | null;
+  webhookStats: AdminWebhookStats | null;
+  loadingWebhooks: boolean;
+  loadingWebhookDetail: boolean;
+
   // Error state
   error: string | null;
 
@@ -159,6 +192,23 @@ interface AdminState {
   clearSelectedApiKey: () => void;
   fetchLoginHistory: (page?: number, size?: number, filters?: AdminLoginHistoryFilters) => Promise<void>;
   setLoginHistoryFilters: (filters: AdminLoginHistoryFilters) => void;
+
+  // P2: Collaborator actions
+  fetchCollaborators: (page?: number, size?: number, filters?: AdminCollaboratorFilters) => Promise<void>;
+  fetchCollaboratorDetail: (collaboratorId: string) => Promise<void>;
+  fetchCollaboratorStats: () => Promise<void>;
+  setCollaboratorFilters: (filters: AdminCollaboratorFilters) => void;
+  deleteCollaborator: (collaboratorId: string) => Promise<void>;
+  clearSelectedCollaborator: () => void;
+
+  // P2: Webhook actions
+  fetchWebhooks: (page?: number, size?: number, filters?: AdminWebhookFilters) => Promise<void>;
+  fetchWebhookDetail: (webhookId: number) => Promise<void>;
+  fetchWebhookStats: () => Promise<void>;
+  setWebhookFilters: (filters: AdminWebhookFilters) => void;
+  toggleWebhook: (webhookId: number) => Promise<void>;
+  deleteWebhook: (webhookId: number) => Promise<void>;
+  clearSelectedWebhook: () => void;
 
   // General
   clearError: () => void;
@@ -235,6 +285,28 @@ const initialState = {
   loadingApiKeys: false,
   loadingApiKeyDetail: false,
   loadingLoginHistory: false,
+
+  // P2: Collaborators
+  collaborators: [] as AdminCollaborator[],
+  collaboratorsTotal: 0,
+  collaboratorsPage: 0,
+  collaboratorsPageSize: 20,
+  collaboratorFilters: {} as AdminCollaboratorFilters,
+  selectedCollaborator: null as AdminCollaboratorDetail | null,
+  collaboratorStats: null as AdminCollaboratorStats | null,
+  loadingCollaborators: false,
+  loadingCollaboratorDetail: false,
+
+  // P2: Webhooks
+  webhooks: [] as AdminWebhook[],
+  webhooksTotal: 0,
+  webhooksPage: 0,
+  webhooksPageSize: 20,
+  webhookFilters: {} as AdminWebhookFilters,
+  selectedWebhook: null as AdminWebhookDetail | null,
+  webhookStats: null as AdminWebhookStats | null,
+  loadingWebhooks: false,
+  loadingWebhookDetail: false,
 
   // Error
   error: null,
@@ -798,6 +870,167 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   setLoginHistoryFilters: (filters: AdminLoginHistoryFilters) => {
     set({ loginHistoryFilters: filters });
   },
+
+  // ============================================================================
+  // P2: Collaborator Management Actions
+  // ============================================================================
+  fetchCollaborators: async (page = 0, size = 20, filters?: AdminCollaboratorFilters) => {
+    set({ loadingCollaborators: true, error: null });
+    const currentFilters = filters || get().collaboratorFilters;
+    try {
+      const { data } = await adminCollaboratorApi.list(page, size, currentFilters);
+      set({
+        collaborators: data.content,
+        collaboratorsTotal: data.totalElements,
+        collaboratorsPage: data.number,
+        collaboratorsPageSize: data.size,
+        collaboratorFilters: currentFilters,
+        loadingCollaborators: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingCollaborators: false,
+        error: err.response?.data?.message || 'Failed to fetch collaborators',
+      });
+    }
+  },
+
+  fetchCollaboratorDetail: async (collaboratorId: string) => {
+    set({ loadingCollaboratorDetail: true, error: null });
+    try {
+      const { data } = await adminCollaboratorApi.get(collaboratorId);
+      set({ selectedCollaborator: data, loadingCollaboratorDetail: false });
+    } catch (err: any) {
+      set({
+        loadingCollaboratorDetail: false,
+        error: err.response?.data?.message || 'Failed to fetch collaborator details',
+      });
+    }
+  },
+
+  fetchCollaboratorStats: async () => {
+    set({ error: null });
+    try {
+      const { data } = await adminCollaboratorApi.getStats();
+      set({ collaboratorStats: data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch collaborator stats' });
+    }
+  },
+
+  setCollaboratorFilters: (filters: AdminCollaboratorFilters) => {
+    set({ collaboratorFilters: filters });
+  },
+
+  deleteCollaborator: async (collaboratorId: string) => {
+    set({ error: null });
+    try {
+      await adminCollaboratorApi.delete(collaboratorId);
+      // Refresh collaborators list
+      const { collaboratorsPage, collaboratorsPageSize, collaboratorFilters } = get();
+      await get().fetchCollaborators(collaboratorsPage, collaboratorsPageSize, collaboratorFilters);
+      // Clear selected collaborator if it was deleted
+      if (get().selectedCollaborator?.id === collaboratorId) {
+        set({ selectedCollaborator: null });
+      }
+      // Refresh stats
+      await get().fetchCollaboratorStats();
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to delete collaborator' });
+      throw err;
+    }
+  },
+
+  clearSelectedCollaborator: () => set({ selectedCollaborator: null }),
+
+  // ============================================================================
+  // P2: Webhook Management Actions
+  // ============================================================================
+  fetchWebhooks: async (page = 0, size = 20, filters?: AdminWebhookFilters) => {
+    set({ loadingWebhooks: true, error: null });
+    const currentFilters = filters || get().webhookFilters;
+    try {
+      const { data } = await adminWebhookApi.list(page, size, currentFilters);
+      set({
+        webhooks: data.content,
+        webhooksTotal: data.totalElements,
+        webhooksPage: data.number,
+        webhooksPageSize: data.size,
+        webhookFilters: currentFilters,
+        loadingWebhooks: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingWebhooks: false,
+        error: err.response?.data?.message || 'Failed to fetch webhooks',
+      });
+    }
+  },
+
+  fetchWebhookDetail: async (webhookId: number) => {
+    set({ loadingWebhookDetail: true, error: null });
+    try {
+      const { data } = await adminWebhookApi.get(webhookId);
+      set({ selectedWebhook: data, loadingWebhookDetail: false });
+    } catch (err: any) {
+      set({
+        loadingWebhookDetail: false,
+        error: err.response?.data?.message || 'Failed to fetch webhook details',
+      });
+    }
+  },
+
+  fetchWebhookStats: async () => {
+    set({ error: null });
+    try {
+      const { data } = await adminWebhookApi.getStats();
+      set({ webhookStats: data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch webhook stats' });
+    }
+  },
+
+  setWebhookFilters: (filters: AdminWebhookFilters) => {
+    set({ webhookFilters: filters });
+  },
+
+  toggleWebhook: async (webhookId: number) => {
+    set({ error: null });
+    try {
+      await adminWebhookApi.toggle(webhookId);
+      // Refresh webhooks list
+      const { webhooksPage, webhooksPageSize, webhookFilters } = get();
+      await get().fetchWebhooks(webhooksPage, webhooksPageSize, webhookFilters);
+      // If we have a selected webhook, refresh that too
+      if (get().selectedWebhook?.id === webhookId) {
+        await get().fetchWebhookDetail(webhookId);
+      }
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to toggle webhook' });
+      throw err;
+    }
+  },
+
+  deleteWebhook: async (webhookId: number) => {
+    set({ error: null });
+    try {
+      await adminWebhookApi.delete(webhookId);
+      // Refresh webhooks list
+      const { webhooksPage, webhooksPageSize, webhookFilters } = get();
+      await get().fetchWebhooks(webhooksPage, webhooksPageSize, webhookFilters);
+      // Clear selected webhook if it was deleted
+      if (get().selectedWebhook?.id === webhookId) {
+        set({ selectedWebhook: null });
+      }
+      // Refresh stats
+      await get().fetchWebhookStats();
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to delete webhook' });
+      throw err;
+    }
+  },
+
+  clearSelectedWebhook: () => set({ selectedWebhook: null }),
 
   // General
   clearError: () => set({ error: null }),

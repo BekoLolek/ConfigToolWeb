@@ -339,3 +339,75 @@ export interface AdminLoginHistoryFilters {
   startDate?: string;
   endDate?: string;
 }
+
+// ============================================================================
+// P2: Admin Collaborator Management Types
+// ============================================================================
+
+export interface AdminCollaborator {
+  id: string;
+  serverId: string;
+  serverName: string;
+  userId: string;
+  userEmail: string;
+  ownerId: string;
+  ownerEmail: string;
+  joinedAt: string;
+}
+
+export interface AdminCollaboratorDetail extends AdminCollaborator {
+  // Same fields as AdminCollaborator for now, but can be extended
+}
+
+export interface AdminCollaboratorStats {
+  totalCollaborators: number;
+  uniqueCollaborators: number;
+  serversWithCollaborators: number;
+}
+
+export interface AdminCollaboratorFilters {
+  serverId?: string;
+  userId?: string;
+  userEmail?: string;
+}
+
+// ============================================================================
+// P2: Admin Webhook Management Types
+// ============================================================================
+
+export type WebhookType = 'CUSTOM' | 'DISCORD' | 'SLACK' | 'EMAIL';
+
+export interface AdminWebhook {
+  id: number;
+  name: string;
+  url: string;
+  type: WebhookType;
+  active: boolean;
+  ownerId: string;
+  ownerEmail: string;
+  successCount: number;
+  failureCount: number;
+  createdAt: string;
+}
+
+export interface AdminWebhookDetail extends AdminWebhook {
+  events: string[];
+  secret: string | null;
+  lastTriggeredAt: string | null;
+  lastFailureAt: string | null;
+  lastFailureMessage: string | null;
+}
+
+export interface AdminWebhookStats {
+  totalWebhooks: number;
+  activeWebhooks: number;
+  totalDeliveries: number;
+  totalFailures: number;
+}
+
+export interface AdminWebhookFilters {
+  ownerId?: string;
+  ownerEmail?: string;
+  active?: boolean;
+  type?: WebhookType;
+}
