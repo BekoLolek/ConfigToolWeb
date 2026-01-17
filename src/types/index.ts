@@ -96,6 +96,7 @@ export interface Invoice {
 
 export interface PaymentMethod {
   id: string;
+  stripePaymentMethodId: string;
   type: string;
   cardBrand: string;
   cardLast4: string;

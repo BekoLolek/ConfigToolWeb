@@ -56,7 +56,7 @@ function PaymentMethodOption({
   selected,
   onSelect,
 }: {
-  method: { id: string; cardBrand: string; cardLast4: string; cardExpMonth: number; cardExpYear: number; isDefault: boolean };
+  method: { id: string; stripePaymentMethodId: string; cardBrand: string; cardLast4: string; cardExpMonth: number; cardExpYear: number; isDefault: boolean };
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -142,11 +142,11 @@ function CheckoutContent() {
     fetchSubscription();
   }, [fetchPaymentMethods, fetchSubscription]);
 
-  // Auto-select default payment method
+  // Auto-select default payment method (store stripePaymentMethodId for API calls)
   useEffect(() => {
     if (paymentMethods.length > 0 && !selectedPaymentMethod && !useNewCard) {
       const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
-      setSelectedPaymentMethod(defaultMethod.id);
+      setSelectedPaymentMethod(defaultMethod.stripePaymentMethodId);
     }
   }, [paymentMethods, selectedPaymentMethod, useNewCard]);
 
@@ -316,8 +316,8 @@ function CheckoutContent() {
                         <PaymentMethodOption
                           key={method.id}
                           method={method}
-                          selected={selectedPaymentMethod === method.id}
-                          onSelect={() => setSelectedPaymentMethod(method.id)}
+                          selected={selectedPaymentMethod === method.stripePaymentMethodId}
+                          onSelect={() => setSelectedPaymentMethod(method.stripePaymentMethodId)}
                         />
                       ))}
 
@@ -346,7 +346,7 @@ function CheckoutContent() {
                           onClick={() => {
                             setUseNewCard(false);
                             const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
-                            setSelectedPaymentMethod(defaultMethod.id);
+                            setSelectedPaymentMethod(defaultMethod.stripePaymentMethodId);
                           }}
                           className="text-sm text-cyber-500 hover:text-cyber-400 mb-4 flex items-center gap-1"
                         >
