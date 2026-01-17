@@ -27,6 +27,13 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 import AdminTemplates from './pages/admin/AdminTemplates';
+// P1 Admin pages
+import AdminServers from './pages/admin/AdminServers';
+import AdminServerDetail from './pages/admin/AdminServerDetail';
+import AdminBilling from './pages/admin/AdminBilling';
+import AdminSubscriptionDetail from './pages/admin/AdminSubscriptionDetail';
+import AdminSecurity from './pages/admin/AdminSecurity';
+import AdminApiKeyDetail from './pages/admin/AdminApiKeyDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -91,6 +98,13 @@ export default function App() {
         <Route path="/admin/users/:userId" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
         <Route path="/admin/audit-logs" element={<AdminRoute><AdminAuditLogs /></AdminRoute>} />
         <Route path="/admin/templates" element={<AdminRoute><AdminTemplates /></AdminRoute>} />
+        {/* P1 Admin routes */}
+        <Route path="/admin/servers" element={<AdminRoute><AdminServers /></AdminRoute>} />
+        <Route path="/admin/servers/:serverId" element={<AdminRoute><AdminServerDetail /></AdminRoute>} />
+        <Route path="/admin/billing" element={<AdminRoute><AdminBilling /></AdminRoute>} />
+        <Route path="/admin/billing/:subscriptionId" element={<AdminRoute><AdminSubscriptionDetail /></AdminRoute>} />
+        <Route path="/admin/security" element={<AdminRoute><AdminSecurity /></AdminRoute>} />
+        <Route path="/admin/security/api-keys/:apiKeyId" element={<AdminRoute><AdminApiKeyDetail /></AdminRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

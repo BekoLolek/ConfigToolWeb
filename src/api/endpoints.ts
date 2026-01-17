@@ -1,6 +1,6 @@
 import { api } from './client';
 import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction, Plan } from '../types';
-import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest } from '../types/admin';
+import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters } from '../types/admin';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -363,4 +363,81 @@ export const adminTemplateApi = {
 
   feature: (templateId: string, featured: boolean) =>
     api.patch(`/api/admin/templates/${templateId}/feature`, { featured }),
+};
+
+// ============================================================================
+// P1: Admin Server Management API
+// ============================================================================
+export const adminServerApi = {
+  list: (page = 0, size = 20, filters?: AdminServerFilters) =>
+    api.get<AdminPageResponse<AdminServer>>('/api/admin/servers', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (serverId: string) =>
+    api.get<AdminServerDetail>(`/api/admin/servers/${serverId}`),
+
+  getStats: () =>
+    api.get<AdminServerStats>('/api/admin/servers/stats'),
+
+  disconnect: (serverId: string) =>
+    api.post(`/api/admin/servers/${serverId}/disconnect`),
+
+  regenerateToken: (serverId: string) =>
+    api.post<{ token: string }>(`/api/admin/servers/${serverId}/regenerate-token`),
+
+  delete: (serverId: string) =>
+    api.delete(`/api/admin/servers/${serverId}`),
+};
+
+// ============================================================================
+// P1: Admin Billing Oversight API
+// ============================================================================
+export const adminBillingApi = {
+  listSubscriptions: (page = 0, size = 20, filters?: AdminSubscriptionFilters) =>
+    api.get<AdminPageResponse<AdminSubscription>>('/api/admin/billing/subscriptions', {
+      params: { page, size, ...filters },
+    }),
+
+  getSubscription: (subscriptionId: string) =>
+    api.get<AdminSubscriptionDetail>(`/api/admin/billing/subscriptions/${subscriptionId}`),
+
+  getStats: () =>
+    api.get<AdminBillingStats>('/api/admin/billing/stats'),
+
+  overridePlan: (subscriptionId: string, data: OverridePlanRequest) =>
+    api.post(`/api/admin/billing/subscriptions/${subscriptionId}/override-plan`, data),
+
+  cancelSubscription: (subscriptionId: string, data: CancelSubscriptionRequest) =>
+    api.post(`/api/admin/billing/subscriptions/${subscriptionId}/cancel`, data),
+
+  extendTrial: (subscriptionId: string, data: ExtendTrialRequest) =>
+    api.post(`/api/admin/billing/subscriptions/${subscriptionId}/extend-trial`, data),
+};
+
+// ============================================================================
+// P1: Admin Security & Access API
+// ============================================================================
+export const adminSecurityApi = {
+  listApiKeys: (page = 0, size = 20, filters?: AdminApiKeyFilters) =>
+    api.get<AdminPageResponse<AdminApiKey>>('/api/admin/security/api-keys', {
+      params: { page, size, ...filters },
+    }),
+
+  getApiKey: (apiKeyId: number) =>
+    api.get<AdminApiKeyDetail>(`/api/admin/security/api-keys/${apiKeyId}`),
+
+  getStats: () =>
+    api.get<AdminSecurityStats>('/api/admin/security/stats'),
+
+  revokeApiKey: (apiKeyId: number) =>
+    api.post(`/api/admin/security/api-keys/${apiKeyId}/revoke`),
+
+  deleteApiKey: (apiKeyId: number) =>
+    api.delete(`/api/admin/security/api-keys/${apiKeyId}`),
+
+  getLoginHistory: (page = 0, size = 50, filters?: AdminLoginHistoryFilters) =>
+    api.get<AdminPageResponse<AdminLoginHistory>>('/api/admin/security/login-history', {
+      params: { page, size, ...filters },
+    }),
 };
