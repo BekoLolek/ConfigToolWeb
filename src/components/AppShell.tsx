@@ -25,7 +25,7 @@ const navigation: NavSection[] = [
     items: [
       {
         label: 'Dashboard',
-        path: '/',
+        path: '/dashboard',
         icon: (
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
@@ -156,17 +156,20 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === '/dashboard') return location.pathname === '/dashboard';
     return location.pathname.startsWith(path);
   };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className={clsx(
-        'flex items-center gap-3 h-16 border-b border-slate-200 dark:border-slate-800/50',
-        sidebarOpen ? 'px-4' : 'justify-center'
-      )}>
+      <Link
+        to="/"
+        className={clsx(
+          'flex items-center gap-3 h-16 border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors',
+          sidebarOpen ? 'px-4' : 'justify-center'
+        )}
+      >
         <div className="relative flex-shrink-0">
           <div className="w-9 h-9 rounded-lg border border-cyber-500/30 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center shadow-sm">
             <svg className="w-5 h-5 text-cyber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,7 +183,7 @@ export default function AppShell({ children }: AppShellProps) {
             CONFIG<span className="text-cyber-500">TOOL</span>
           </span>
         )}
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-6">

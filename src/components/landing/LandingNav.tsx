@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ThemeToggle from '../ThemeToggle';
+import { useAuthStore } from '../../stores/authStore';
 
 interface LandingNavProps {
   onScrollTo: (id: string) => void;
@@ -9,6 +10,7 @@ interface LandingNavProps {
 export default function LandingNav({ onScrollTo }: LandingNavProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,10 +80,10 @@ export default function LandingNav({ onScrollTo }: LandingNavProps) {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link
-              to="/login"
+              to={isAuthenticated ? '/dashboard' : '/login'}
               className="hidden sm:inline-flex btn btn-primary"
             >
-              Get Started
+              {isAuthenticated ? 'Panel' : 'Get Started'}
             </Link>
 
             {/* Mobile menu button */}
@@ -116,10 +118,10 @@ export default function LandingNav({ onScrollTo }: LandingNavProps) {
                 </button>
               ))}
               <Link
-                to="/login"
+                to={isAuthenticated ? '/dashboard' : '/login'}
                 className="btn btn-primary mt-2 text-center"
               >
-                Get Started
+                {isAuthenticated ? 'Panel' : 'Get Started'}
               </Link>
             </nav>
           </div>

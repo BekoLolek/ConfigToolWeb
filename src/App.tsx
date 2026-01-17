@@ -72,14 +72,6 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <AdminLayout>{children}</AdminLayout>;
 }
 
-// Root route that shows landing page for unauthenticated users
-function RootRoute() {
-  const { isAuthenticated } = useAuthStore();
-  if (isAuthenticated) {
-    return <ProtectedRoute><Dashboard /></ProtectedRoute>;
-  }
-  return <Landing />;
-}
 
 export default function App() {
   return (
@@ -91,8 +83,11 @@ export default function App() {
         <Route path="/docs" element={<PublicRoute><Docs /></PublicRoute>} />
         <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
 
-        {/* Root route - Landing for unauthenticated, Dashboard for authenticated */}
-        <Route path="/" element={<RootRoute />} />
+        {/* Public landing page */}
+        <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+
+        {/* Dashboard - protected */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/servers/:serverId" element={<ProtectedRoute><ServerView /></ProtectedRoute>} />
         <Route path="/templates" element={<ProtectedRoute><TemplateLibrary /></ProtectedRoute>} />
         <Route path="/templates/:templateId" element={<ProtectedRoute><TemplateDetail /></ProtectedRoute>} />
