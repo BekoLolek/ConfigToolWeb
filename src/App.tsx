@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import AppShell from './components/AppShell';
+import AdminLayout from './components/admin/AdminLayout';
 import Landing from './pages/Landing';
 import Docs from './pages/Docs';
 import Login from './pages/Login';
@@ -20,6 +21,13 @@ import TemplateDetail from './pages/TemplateDetail';
 import VerifyEmail from './pages/VerifyEmail';
 import ToastContainer from './components/Toast';
 
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminUserDetail from './pages/admin/AdminUserDetail';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+import AdminTemplates from './pages/admin/AdminTemplates';
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -35,6 +43,13 @@ function ProtectedRouteNoShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+
+// Admin route with AdminLayout (requires authentication, admin check can be added server-side)
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <AdminLayout>{children}</AdminLayout>;
 }
 
 // Root route that shows landing page for unauthenticated users
@@ -69,6 +84,13 @@ export default function App() {
         <Route path="/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
         <Route path="/scheduled-backups" element={<ProtectedRoute><ScheduledBackups /></ProtectedRoute>} />
         <Route path="/git-configs" element={<ProtectedRoute><GitConfigs /></ProtectedRoute>} />
+
+        {/* Admin routes */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/users/:userId" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
+        <Route path="/admin/audit-logs" element={<AdminRoute><AdminAuditLogs /></AdminRoute>} />
+        <Route path="/admin/templates" element={<AdminRoute><AdminTemplates /></AdminRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

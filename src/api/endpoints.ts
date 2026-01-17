@@ -1,5 +1,6 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction, Plan } from '../types';
+import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest } from '../types/admin';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -286,4 +287,80 @@ export const auditLogApi = {
   // Get activity statistics
   getActivityStats: () =>
     api.get<{ actionsLast24Hours: number }>(`/api/audit-logs/activity/stats`),
+};
+
+// ============================================================================
+// Admin APIs (require admin role)
+// ============================================================================
+
+// Admin Dashboard API
+export const adminDashboardApi = {
+  getStats: () =>
+    api.get<AdminDashboardStats>('/api/admin/dashboard/stats'),
+
+  getRevenue: () =>
+    api.get<AdminRevenue>('/api/admin/dashboard/revenue'),
+};
+
+// Admin User Management API
+export const adminUserApi = {
+  list: (page = 0, size = 20, search?: string) =>
+    api.get<AdminPageResponse<AdminUser>>('/api/admin/users', {
+      params: { page, size, search },
+    }),
+
+  get: (userId: string) =>
+    api.get<AdminUserDetail>(`/api/admin/users/${userId}`),
+
+  suspend: (userId: string, data: SuspendUserRequest) =>
+    api.post(`/api/admin/users/${userId}/suspend`, data),
+
+  unsuspend: (userId: string) =>
+    api.post(`/api/admin/users/${userId}/unsuspend`),
+
+  delete: (userId: string) =>
+    api.delete(`/api/admin/users/${userId}`),
+
+  overridePlan: (userId: string, data: OverridePlanRequest) =>
+    api.post(`/api/admin/users/${userId}/override-plan`, data),
+};
+
+// Admin Audit Log API
+export const adminAuditLogApi = {
+  list: (page = 0, size = 50, filters?: AdminAuditLogFilters) =>
+    api.get<AdminPageResponse<AdminAuditLog>>('/api/admin/audit-logs', {
+      params: {
+        page,
+        size,
+        ...filters,
+      },
+    }),
+
+  export: async (format: 'csv' | 'json', filters?: AdminAuditLogFilters): Promise<Blob> => {
+    const response = await api.get('/api/admin/audit-logs/export', {
+      params: {
+        format,
+        ...filters,
+      },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+};
+
+// Admin Template Review API
+export const adminTemplateApi = {
+  list: (status: TemplateReviewStatus, page = 0, size = 20) =>
+    api.get<AdminPageResponse<AdminTemplate>>('/api/admin/templates', {
+      params: { status, page, size },
+    }),
+
+  approve: (templateId: string) =>
+    api.post(`/api/admin/templates/${templateId}/approve`),
+
+  reject: (templateId: string, data: RejectTemplateRequest) =>
+    api.post(`/api/admin/templates/${templateId}/reject`, data),
+
+  feature: (templateId: string, featured: boolean) =>
+    api.patch(`/api/admin/templates/${templateId}/feature`, { featured }),
 };
