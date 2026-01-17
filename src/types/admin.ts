@@ -490,3 +490,82 @@ export interface AdminScheduledBackupFilters {
   enabled?: boolean;
   status?: BackupStatus;
 }
+
+// ============================================================================
+// P4: Admin Git Config Management Types
+// ============================================================================
+
+export type GitSyncStatus = 'NEVER_SYNCED' | 'SUCCESS' | 'FAILED' | 'IN_PROGRESS';
+
+export interface AdminGitConfig {
+  id: number;
+  serverId: string;
+  serverName: string;
+  ownerId: string;
+  ownerEmail: string;
+  repositoryUrl: string;
+  branch: string;
+  directoryPath: string | null;
+  enabled: boolean;
+  lastSyncStatus: GitSyncStatus;
+  lastSyncAt: string | null;
+  lastSyncError: string | null;
+  createdAt: string;
+}
+
+export interface AdminGitConfigDetail extends AdminGitConfig {
+  // Same fields for now, can be extended
+}
+
+export interface AdminGitConfigStats {
+  totalConfigs: number;
+  enabledConfigs: number;
+  failedConfigs: number;
+}
+
+export interface AdminGitConfigFilters {
+  ownerId?: string;
+  serverId?: string;
+  enabled?: boolean;
+  status?: GitSyncStatus;
+}
+
+// ============================================================================
+// P4: Admin Config Files Management Types
+// ============================================================================
+
+export interface AdminConfigFile {
+  id: string;
+  serverId: string;
+  serverName: string;
+  ownerId: string;
+  ownerEmail: string;
+  filePath: string;
+  lastModified: string | null;
+  versionCount: number;
+}
+
+export interface AdminConfigFileDetail extends AdminConfigFile {
+  // Same fields for now, can be extended
+}
+
+export interface AdminConfigVersion {
+  id: string;
+  configFileId: string;
+  contentHash: string | null;
+  message: string | null;
+  createdById: string | null;
+  createdByEmail: string | null;
+  createdAt: string;
+}
+
+export interface AdminConfigStats {
+  totalFiles: number;
+  totalVersions: number;
+  serversWithConfigs: number;
+}
+
+export interface AdminConfigFileFilters {
+  serverId?: string;
+  ownerId?: string;
+}

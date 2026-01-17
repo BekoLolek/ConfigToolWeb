@@ -44,6 +44,9 @@ import AdminInviteCodes from './pages/admin/AdminInviteCodes';
 import AdminInviteCodeDetail from './pages/admin/AdminInviteCodeDetail';
 import AdminScheduledBackups from './pages/admin/AdminScheduledBackups';
 import AdminScheduledBackupDetail from './pages/admin/AdminScheduledBackupDetail';
+// P4 Admin pages
+import AdminGitConfigs from './pages/admin/AdminGitConfigs';
+import AdminConfigFiles from './pages/admin/AdminConfigFiles';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -125,6 +128,9 @@ export default function App() {
         <Route path="/admin/invite-codes/:inviteCodeId" element={<AdminRoute><AdminInviteCodeDetail /></AdminRoute>} />
         <Route path="/admin/scheduled-backups" element={<AdminRoute><AdminScheduledBackups /></AdminRoute>} />
         <Route path="/admin/scheduled-backups/:backupId" element={<AdminRoute><AdminScheduledBackupDetail /></AdminRoute>} />
+        {/* P4 Admin routes */}
+        <Route path="/admin/git-configs" element={<AdminRoute><AdminGitConfigs /></AdminRoute>} />
+        <Route path="/admin/config-files" element={<AdminRoute><AdminConfigFiles /></AdminRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

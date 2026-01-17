@@ -1,6 +1,6 @@
 import { api } from './client';
 import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction, Plan } from '../types';
-import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters, AdminCollaborator, AdminCollaboratorDetail, AdminCollaboratorStats, AdminCollaboratorFilters, AdminWebhook, AdminWebhookDetail, AdminWebhookStats, AdminWebhookFilters, AdminInviteCode, AdminInviteCodeDetail, AdminInviteCodeStats, AdminInviteCodeFilters, AdminScheduledBackup, AdminScheduledBackupDetail, AdminScheduledBackupStats, AdminScheduledBackupFilters } from '../types/admin';
+import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters, AdminCollaborator, AdminCollaboratorDetail, AdminCollaboratorStats, AdminCollaboratorFilters, AdminWebhook, AdminWebhookDetail, AdminWebhookStats, AdminWebhookFilters, AdminInviteCode, AdminInviteCodeDetail, AdminInviteCodeStats, AdminInviteCodeFilters, AdminScheduledBackup, AdminScheduledBackupDetail, AdminScheduledBackupStats, AdminScheduledBackupFilters, AdminGitConfig, AdminGitConfigDetail, AdminGitConfigStats, AdminGitConfigFilters, AdminConfigFile, AdminConfigFileDetail, AdminConfigVersion, AdminConfigStats, AdminConfigFileFilters } from '../types/admin';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -522,4 +522,47 @@ export const adminScheduledBackupApi = {
 
   delete: (backupId: number) =>
     api.delete(`/api/admin/scheduled-backups/${backupId}`),
+};
+
+// ============================================================================
+// P4: Admin Git Config Management API
+// ============================================================================
+export const adminGitConfigApi = {
+  list: (page = 0, size = 20, filters?: AdminGitConfigFilters) =>
+    api.get<AdminPageResponse<AdminGitConfig>>('/api/admin/git-configs', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (configId: number) =>
+    api.get<AdminGitConfigDetail>(`/api/admin/git-configs/${configId}`),
+
+  getStats: () =>
+    api.get<AdminGitConfigStats>('/api/admin/git-configs/stats'),
+
+  toggle: (configId: number, enabled: boolean) =>
+    api.post(`/api/admin/git-configs/${configId}/toggle`, { enabled }),
+
+  delete: (configId: number) =>
+    api.delete(`/api/admin/git-configs/${configId}`),
+};
+
+// ============================================================================
+// P4: Admin Config Files Management API
+// ============================================================================
+export const adminConfigFilesApi = {
+  list: (page = 0, size = 20, filters?: AdminConfigFileFilters) =>
+    api.get<AdminPageResponse<AdminConfigFile>>('/api/admin/configs/files', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (fileId: string) =>
+    api.get<AdminConfigFileDetail>(`/api/admin/configs/files/${fileId}`),
+
+  getVersions: (fileId: string, page = 0, size = 20) =>
+    api.get<AdminPageResponse<AdminConfigVersion>>(`/api/admin/configs/files/${fileId}/versions`, {
+      params: { page, size },
+    }),
+
+  getStats: () =>
+    api.get<AdminConfigStats>('/api/admin/configs/stats'),
 };

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { adminDashboardApi, adminUserApi, adminAuditLogApi, adminTemplateApi, adminServerApi, adminBillingApi, adminSecurityApi, adminCollaboratorApi, adminWebhookApi, adminInviteCodeApi, adminScheduledBackupApi } from '../api/endpoints';
+import { adminDashboardApi, adminUserApi, adminAuditLogApi, adminTemplateApi, adminServerApi, adminBillingApi, adminSecurityApi, adminCollaboratorApi, adminWebhookApi, adminInviteCodeApi, adminScheduledBackupApi, adminGitConfigApi, adminConfigFilesApi } from '../api/endpoints';
 import type {
   AdminDashboardStats,
   AdminRevenue,
@@ -48,6 +48,17 @@ import type {
   AdminScheduledBackupDetail,
   AdminScheduledBackupStats,
   AdminScheduledBackupFilters,
+  // P4: Git Config Types
+  AdminGitConfig,
+  AdminGitConfigDetail,
+  AdminGitConfigStats,
+  AdminGitConfigFilters,
+  // P4: Config Files Types
+  AdminConfigFile,
+  AdminConfigFileDetail,
+  AdminConfigVersion,
+  AdminConfigStats,
+  AdminConfigFileFilters,
 } from '../types/admin';
 import type { Plan, SubscriptionStatus } from '../types';
 
@@ -166,6 +177,32 @@ interface AdminState {
   loadingScheduledBackups: boolean;
   loadingScheduledBackupDetail: boolean;
 
+  // P4: Git Configs
+  gitConfigs: AdminGitConfig[];
+  gitConfigsTotal: number;
+  gitConfigsPage: number;
+  gitConfigsPageSize: number;
+  gitConfigFilters: AdminGitConfigFilters;
+  selectedGitConfig: AdminGitConfigDetail | null;
+  gitConfigStats: AdminGitConfigStats | null;
+  loadingGitConfigs: boolean;
+  loadingGitConfigDetail: boolean;
+
+  // P4: Config Files
+  configFiles: AdminConfigFile[];
+  configFilesTotal: number;
+  configFilesPage: number;
+  configFilesPageSize: number;
+  configFileFilters: AdminConfigFileFilters;
+  selectedConfigFile: AdminConfigFileDetail | null;
+  configFileVersions: AdminConfigVersion[];
+  configFileVersionsTotal: number;
+  configFileVersionsPage: number;
+  configStats: AdminConfigStats | null;
+  loadingConfigFiles: boolean;
+  loadingConfigFileDetail: boolean;
+  loadingConfigFileVersions: boolean;
+
   // Error state
   error: string | null;
 
@@ -258,6 +295,23 @@ interface AdminState {
   toggleScheduledBackup: (backupId: number) => Promise<void>;
   deleteScheduledBackup: (backupId: number) => Promise<void>;
   clearSelectedScheduledBackup: () => void;
+
+  // P4: Git Config actions
+  fetchGitConfigs: (page?: number, size?: number, filters?: AdminGitConfigFilters) => Promise<void>;
+  fetchGitConfigDetail: (configId: number) => Promise<void>;
+  fetchGitConfigStats: () => Promise<void>;
+  setGitConfigFilters: (filters: AdminGitConfigFilters) => void;
+  toggleGitConfig: (configId: number, enabled: boolean) => Promise<void>;
+  deleteGitConfig: (configId: number) => Promise<void>;
+  clearSelectedGitConfig: () => void;
+
+  // P4: Config Files actions
+  fetchConfigFiles: (page?: number, size?: number, filters?: AdminConfigFileFilters) => Promise<void>;
+  fetchConfigFileDetail: (fileId: string) => Promise<void>;
+  fetchConfigFileVersions: (fileId: string, page?: number, size?: number) => Promise<void>;
+  fetchConfigStats: () => Promise<void>;
+  setConfigFileFilters: (filters: AdminConfigFileFilters) => void;
+  clearSelectedConfigFile: () => void;
 
   // General
   clearError: () => void;
@@ -378,6 +432,32 @@ const initialState = {
   scheduledBackupStats: null as AdminScheduledBackupStats | null,
   loadingScheduledBackups: false,
   loadingScheduledBackupDetail: false,
+
+  // P4: Git Configs
+  gitConfigs: [] as AdminGitConfig[],
+  gitConfigsTotal: 0,
+  gitConfigsPage: 0,
+  gitConfigsPageSize: 20,
+  gitConfigFilters: {} as AdminGitConfigFilters,
+  selectedGitConfig: null as AdminGitConfigDetail | null,
+  gitConfigStats: null as AdminGitConfigStats | null,
+  loadingGitConfigs: false,
+  loadingGitConfigDetail: false,
+
+  // P4: Config Files
+  configFiles: [] as AdminConfigFile[],
+  configFilesTotal: 0,
+  configFilesPage: 0,
+  configFilesPageSize: 20,
+  configFileFilters: {} as AdminConfigFileFilters,
+  selectedConfigFile: null as AdminConfigFileDetail | null,
+  configFileVersions: [] as AdminConfigVersion[],
+  configFileVersionsTotal: 0,
+  configFileVersionsPage: 0,
+  configStats: null as AdminConfigStats | null,
+  loadingConfigFiles: false,
+  loadingConfigFileDetail: false,
+  loadingConfigFileVersions: false,
 
   // Error
   error: null,
@@ -1263,6 +1343,168 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   clearSelectedScheduledBackup: () => set({ selectedScheduledBackup: null }),
+
+  // ============================================================================
+  // P4: Git Config Management Actions
+  // ============================================================================
+  fetchGitConfigs: async (page = 0, size = 20, filters?: AdminGitConfigFilters) => {
+    set({ loadingGitConfigs: true, error: null });
+    const currentFilters = filters || get().gitConfigFilters;
+    try {
+      const { data } = await adminGitConfigApi.list(page, size, currentFilters);
+      set({
+        gitConfigs: data.content,
+        gitConfigsTotal: data.totalElements,
+        gitConfigsPage: data.number,
+        gitConfigsPageSize: data.size,
+        gitConfigFilters: currentFilters,
+        loadingGitConfigs: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingGitConfigs: false,
+        error: err.response?.data?.message || 'Failed to fetch git configs',
+      });
+    }
+  },
+
+  fetchGitConfigDetail: async (configId: number) => {
+    set({ loadingGitConfigDetail: true, error: null });
+    try {
+      const { data } = await adminGitConfigApi.get(configId);
+      set({ selectedGitConfig: data, loadingGitConfigDetail: false });
+    } catch (err: any) {
+      set({
+        loadingGitConfigDetail: false,
+        error: err.response?.data?.message || 'Failed to fetch git config details',
+      });
+    }
+  },
+
+  fetchGitConfigStats: async () => {
+    set({ error: null });
+    try {
+      const { data } = await adminGitConfigApi.getStats();
+      set({ gitConfigStats: data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch git config stats' });
+    }
+  },
+
+  setGitConfigFilters: (filters: AdminGitConfigFilters) => {
+    set({ gitConfigFilters: filters });
+  },
+
+  toggleGitConfig: async (configId: number, enabled: boolean) => {
+    set({ error: null });
+    try {
+      await adminGitConfigApi.toggle(configId, enabled);
+      // Refresh git configs list
+      const { gitConfigsPage, gitConfigsPageSize, gitConfigFilters } = get();
+      await get().fetchGitConfigs(gitConfigsPage, gitConfigsPageSize, gitConfigFilters);
+      // If we have a selected git config, refresh that too
+      if (get().selectedGitConfig?.id === configId) {
+        await get().fetchGitConfigDetail(configId);
+      }
+      // Refresh stats
+      await get().fetchGitConfigStats();
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to toggle git config' });
+      throw err;
+    }
+  },
+
+  deleteGitConfig: async (configId: number) => {
+    set({ error: null });
+    try {
+      await adminGitConfigApi.delete(configId);
+      // Refresh git configs list
+      const { gitConfigsPage, gitConfigsPageSize, gitConfigFilters } = get();
+      await get().fetchGitConfigs(gitConfigsPage, gitConfigsPageSize, gitConfigFilters);
+      // Clear selected git config if it was deleted
+      if (get().selectedGitConfig?.id === configId) {
+        set({ selectedGitConfig: null });
+      }
+      // Refresh stats
+      await get().fetchGitConfigStats();
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to delete git config' });
+      throw err;
+    }
+  },
+
+  clearSelectedGitConfig: () => set({ selectedGitConfig: null }),
+
+  // ============================================================================
+  // P4: Config Files Management Actions
+  // ============================================================================
+  fetchConfigFiles: async (page = 0, size = 20, filters?: AdminConfigFileFilters) => {
+    set({ loadingConfigFiles: true, error: null });
+    const currentFilters = filters || get().configFileFilters;
+    try {
+      const { data } = await adminConfigFilesApi.list(page, size, currentFilters);
+      set({
+        configFiles: data.content,
+        configFilesTotal: data.totalElements,
+        configFilesPage: data.number,
+        configFilesPageSize: data.size,
+        configFileFilters: currentFilters,
+        loadingConfigFiles: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingConfigFiles: false,
+        error: err.response?.data?.message || 'Failed to fetch config files',
+      });
+    }
+  },
+
+  fetchConfigFileDetail: async (fileId: string) => {
+    set({ loadingConfigFileDetail: true, error: null });
+    try {
+      const { data } = await adminConfigFilesApi.get(fileId);
+      set({ selectedConfigFile: data, loadingConfigFileDetail: false });
+    } catch (err: any) {
+      set({
+        loadingConfigFileDetail: false,
+        error: err.response?.data?.message || 'Failed to fetch config file details',
+      });
+    }
+  },
+
+  fetchConfigFileVersions: async (fileId: string, page = 0, size = 20) => {
+    set({ loadingConfigFileVersions: true, error: null });
+    try {
+      const { data } = await adminConfigFilesApi.getVersions(fileId, page, size);
+      set({
+        configFileVersions: data.content,
+        configFileVersionsTotal: data.totalElements,
+        configFileVersionsPage: data.number,
+        loadingConfigFileVersions: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingConfigFileVersions: false,
+        error: err.response?.data?.message || 'Failed to fetch config file versions',
+      });
+    }
+  },
+
+  fetchConfigStats: async () => {
+    set({ error: null });
+    try {
+      const { data } = await adminConfigFilesApi.getStats();
+      set({ configStats: data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch config stats' });
+    }
+  },
+
+  setConfigFileFilters: (filters: AdminConfigFileFilters) => {
+    set({ configFileFilters: filters });
+  },
+
+  clearSelectedConfigFile: () => set({ selectedConfigFile: null, configFileVersions: [], configFileVersionsTotal: 0 }),
 
   // General
   clearError: () => set({ error: null }),
