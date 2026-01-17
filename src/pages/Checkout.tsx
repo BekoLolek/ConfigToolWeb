@@ -112,6 +112,22 @@ function PaymentMethodOption({
   );
 }
 
+// Helper function to get plan price (handles FREE plan not in PLANS)
+function getPlanPrice(plan: string | undefined): number {
+  if (!plan || plan === 'FREE') return 0;
+  const planDetails = PLANS[plan as Plan];
+  return planDetails ? planDetails.priceMonthly : 0;
+}
+
+// Format date for display
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 function CheckoutContent() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -135,6 +151,13 @@ function CheckoutContent() {
   const [useNewCard, setUseNewCard] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Determine if this is an upgrade or downgrade
+  const currentPlanPrice = getPlanPrice(subscription?.plan);
+  const newPlanPrice = getPlanPrice(planKey);
+  const isUpgrade = newPlanPrice > currentPlanPrice;
+  const isDowngrade = newPlanPrice < currentPlanPrice && subscription && subscription.plan !== 'FREE';
+  const isPlanChange = subscription && subscription.plan !== 'FREE' && subscription.plan !== planKey;
 
   // Fetch data on mount
   useEffect(() => {
@@ -173,7 +196,8 @@ function CheckoutContent() {
 
   // Handle checkout with existing payment method
   const handleCheckout = async () => {
-    if (!selectedPaymentMethod) {
+    // For downgrades, payment method is not required
+    if (!isDowngrade && !selectedPaymentMethod) {
       setLocalError('Please select a payment method');
       return;
     }
@@ -183,7 +207,9 @@ function CheckoutContent() {
     clearError();
 
     try {
-      await createSubscription(planKey, selectedPaymentMethod, billingCycle);
+      // For downgrades, pass empty string as payment method (not needed)
+      const paymentMethodId = isDowngrade ? '' : selectedPaymentMethod!;
+      await createSubscription(planKey, paymentMethodId, billingCycle);
       navigate('/billing?success=true');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to create subscription');
@@ -297,98 +323,153 @@ function CheckoutContent() {
                 <div className="h-1 bg-gradient-to-r from-cyber-600 via-cyber-400 to-cyber-600" />
 
                 <div className="p-6 sm:p-8">
-                  <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
-                    Payment Method
-                  </h2>
-                  <p className="text-slate-500 text-sm mb-6">
-                    Select a payment method or add a new card
-                  </p>
+                  {isDowngrade ? (
+                    <>
+                      {/* Downgrade UI - no payment method needed */}
+                      <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
+                        Schedule Downgrade
+                      </h2>
+                      <p className="text-slate-500 text-sm mb-6">
+                        Your plan will change at the end of your current billing period
+                      </p>
 
-                  {/* Existing payment methods */}
-                  {loadingPaymentMethods ? (
-                    <div className="space-y-3 mb-6">
-                      <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
-                      <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
-                    </div>
-                  ) : paymentMethods.length > 0 && !useNewCard ? (
-                    <div className="space-y-3 mb-6">
-                      {paymentMethods.map((method) => (
-                        <PaymentMethodOption
-                          key={method.id}
-                          method={method}
-                          selected={selectedPaymentMethod === method.stripePaymentMethodId}
-                          onSelect={() => setSelectedPaymentMethod(method.stripePaymentMethodId)}
-                        />
-                      ))}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUseNewCard(true);
-                          setSelectedPaymentMethod(null);
-                        }}
-                        className="w-full p-4 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-cyber-500/50 dark:hover:border-cyber-500/50 transition-colors text-slate-500 hover:text-cyber-500 flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span className="font-medium text-sm">Add new card</span>
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {/* New card form */}
-                  {(useNewCard || paymentMethods.length === 0) && !loadingPaymentMethods && (
-                    <div className="mb-6">
-                      {paymentMethods.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUseNewCard(false);
-                            const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
-                            setSelectedPaymentMethod(defaultMethod.stripePaymentMethodId);
-                          }}
-                          className="text-sm text-cyber-500 hover:text-cyber-400 mb-4 flex items-center gap-1"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      {/* Downgrade info message */}
+                      <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg">
+                        <div className="flex gap-3">
+                          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          Use existing card
+                          <div>
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                              Your current plan features will remain active until {subscription?.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : 'the end of your billing period'}
+                            </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                              No payment is required now. Your new plan will take effect automatically.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Schedule Downgrade button */}
+                      <button
+                        onClick={handleCheckout}
+                        disabled={isProcessing || loadingSubscription}
+                        className={`w-full py-4 rounded-lg font-display font-semibold text-sm uppercase tracking-wide transition-all ${
+                          isProcessing || loadingSubscription
+                            ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                            : 'bg-amber-500 text-white hover:bg-amber-400 shadow-md hover:shadow-lg'
+                        }`}
+                      >
+                        {isProcessing || loadingSubscription ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Processing...
+                          </span>
+                        ) : (
+                          'Schedule Downgrade'
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Upgrade / New subscription UI - payment method required */}
+                      <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
+                        Payment Method
+                      </h2>
+                      <p className="text-slate-500 text-sm mb-6">
+                        Select a payment method or add a new card
+                      </p>
+
+                      {/* Existing payment methods */}
+                      {loadingPaymentMethods ? (
+                        <div className="space-y-3 mb-6">
+                          <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                          <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                        </div>
+                      ) : paymentMethods.length > 0 && !useNewCard ? (
+                        <div className="space-y-3 mb-6">
+                          {paymentMethods.map((method) => (
+                            <PaymentMethodOption
+                              key={method.id}
+                              method={method}
+                              selected={selectedPaymentMethod === method.stripePaymentMethodId}
+                              onSelect={() => setSelectedPaymentMethod(method.stripePaymentMethodId)}
+                            />
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUseNewCard(true);
+                              setSelectedPaymentMethod(null);
+                            }}
+                            className="w-full p-4 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-cyber-500/50 dark:hover:border-cyber-500/50 transition-colors text-slate-500 hover:text-cyber-500 flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span className="font-medium text-sm">Add new card</span>
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {/* New card form */}
+                      {(useNewCard || paymentMethods.length === 0) && !loadingPaymentMethods && (
+                        <div className="mb-6">
+                          {paymentMethods.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUseNewCard(false);
+                                const defaultMethod = paymentMethods.find(pm => pm.isDefault) || paymentMethods[0];
+                                setSelectedPaymentMethod(defaultMethod.stripePaymentMethodId);
+                              }}
+                              className="text-sm text-cyber-500 hover:text-cyber-400 mb-4 flex items-center gap-1"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                              Use existing card
+                            </button>
+                          )}
+
+                          <CardInput
+                            onPaymentMethodCreated={handleNewCard}
+                            onError={(err) => setLocalError(err)}
+                            loading={isProcessing}
+                            buttonText={`Pay ${formatPrice(price, billingCycle === 'yearly')}`}
+                          />
+                        </div>
+                      )}
+
+                      {/* Pay button for existing card */}
+                      {!useNewCard && paymentMethods.length > 0 && (
+                        <button
+                          onClick={handleCheckout}
+                          disabled={!selectedPaymentMethod || isProcessing || loadingSubscription}
+                          className={`w-full py-4 rounded-lg font-display font-semibold text-sm uppercase tracking-wide transition-all ${
+                            !selectedPaymentMethod || isProcessing || loadingSubscription
+                              ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                              : 'bg-cyber-600 text-white hover:bg-cyber-500 shadow-glow-sm hover:shadow-glow'
+                          }`}
+                        >
+                          {isProcessing || loadingSubscription ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                              Processing...
+                            </span>
+                          ) : (
+                            `Pay ${formatPrice(price, billingCycle === 'yearly')}`
+                          )}
                         </button>
                       )}
-
-                      <CardInput
-                        onPaymentMethodCreated={handleNewCard}
-                        onError={(err) => setLocalError(err)}
-                        loading={isProcessing}
-                        buttonText={`Pay ${formatPrice(price, billingCycle === 'yearly')}`}
-                      />
-                    </div>
-                  )}
-
-                  {/* Pay button for existing card */}
-                  {!useNewCard && paymentMethods.length > 0 && (
-                    <button
-                      onClick={handleCheckout}
-                      disabled={!selectedPaymentMethod || isProcessing || loadingSubscription}
-                      className={`w-full py-4 rounded-lg font-display font-semibold text-sm uppercase tracking-wide transition-all ${
-                        !selectedPaymentMethod || isProcessing || loadingSubscription
-                          ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                          : 'bg-cyber-600 text-white hover:bg-cyber-500 shadow-glow-sm hover:shadow-glow'
-                      }`}
-                    >
-                      {isProcessing || loadingSubscription ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        `Pay ${formatPrice(price, billingCycle === 'yearly')}`
-                      )}
-                    </button>
+                    </>
                   )}
 
                   {/* Security badges */}
@@ -483,11 +564,18 @@ function CheckoutContent() {
                       </p>
                     </div>
 
-                    {/* Upgrade info */}
-                    {subscription && subscription.plan !== 'FREE' && subscription.plan !== planKey && (
+                    {/* Upgrade/Downgrade info */}
+                    {isPlanChange && isUpgrade && (
                       <div className="mt-4 p-3 bg-cyber-500/10 border border-cyber-500/30 rounded-lg">
                         <p className="text-xs text-cyber-600 dark:text-cyber-400">
-                          <strong>Plan Change:</strong> You'll be charged the prorated difference. Your new plan features will be available immediately.
+                          <strong>Upgrade:</strong> You'll be charged the prorated difference immediately. Your new plan features will be available right away.
+                        </p>
+                      </div>
+                    )}
+                    {isPlanChange && isDowngrade && (
+                      <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg">
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          <strong>Downgrade:</strong> Your current plan features will remain active until {subscription?.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : 'the end of your billing period'}. No payment required.
                         </p>
                       </div>
                     )}

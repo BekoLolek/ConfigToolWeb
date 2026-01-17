@@ -4,6 +4,14 @@ import { useBillingStore } from '../stores/billingStore';
 import PaymentMethodManager from '../components/PaymentMethodManager';
 import type { Plan, SubscriptionStatus, InvoiceStatus } from '../types';
 
+function formatLongDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 const PLAN_NAMES: Record<Plan, string> = {
   FREE: 'Free',
   PRO: 'Pro',
@@ -97,6 +105,7 @@ export default function Billing() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showPaymentManager, setShowPaymentManager] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [cancelDowngradeLoading, setCancelDowngradeLoading] = useState(false);
 
   // Get billing data from store
   const {
@@ -112,6 +121,7 @@ export default function Billing() {
     fetchAll,
     cancelSubscription,
     resumeSubscription,
+    cancelPendingDowngrade,
     addPaymentMethod,
     removePaymentMethod,
     setDefaultPaymentMethod,
@@ -168,6 +178,17 @@ export default function Billing() {
       await openBillingPortal(window.location.href);
     } catch (err) {
       // Error is already set in store
+    }
+  };
+
+  const handleCancelPendingDowngrade = async () => {
+    setCancelDowngradeLoading(true);
+    try {
+      await cancelPendingDowngrade();
+    } catch (err) {
+      // Error is already set in store
+    } finally {
+      setCancelDowngradeLoading(false);
     }
   };
 
@@ -268,6 +289,36 @@ export default function Billing() {
                       {subscription.status === 'TRIALING' ? `Trial (${subscription.trialDaysRemaining}d left)` : subscription.status}
                     </span>
                   </div>
+
+                  {/* Pending Downgrade Banner */}
+                  {subscription.pendingPlan && subscription.pendingPlanEffectiveDate && (
+                    <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                              Scheduled Plan Change
+                            </p>
+                            <p className="text-sm text-amber-700 dark:text-amber-300">
+                              Your plan will change to <strong>{PLAN_NAMES[subscription.pendingPlan]}</strong> on {formatLongDate(subscription.pendingPlanEffectiveDate)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleCancelPendingDowngrade}
+                          disabled={cancelDowngradeLoading}
+                          className="flex-shrink-0 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800/50 hover:bg-amber-200 dark:hover:bg-amber-700/50 border border-amber-300 dark:border-amber-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {cancelDowngradeLoading ? 'Canceling...' : 'Cancel Downgrade'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-6 mb-6">
                     <div className="flex-1">

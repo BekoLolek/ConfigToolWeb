@@ -85,6 +85,7 @@ export const billingApi = {
   createSubscription: (data: CreateSubscriptionRequest) => api.post<Subscription>('/api/billing/subscription', data),
   cancelSubscription: () => api.post('/api/billing/subscription/cancel'),
   resumeSubscription: () => api.post('/api/billing/subscription/resume'),
+  cancelPendingDowngrade: () => api.post<Subscription>('/api/billing/subscription/cancel-pending'),
   getInvoices: () => api.get<Invoice[]>('/api/billing/invoices'),
   getPaymentMethods: () => api.get<PaymentMethod[]>('/api/billing/payment-methods'),
   addPaymentMethod: (data: AddPaymentMethodRequest) => api.post<PaymentMethod>('/api/billing/payment-methods', data),

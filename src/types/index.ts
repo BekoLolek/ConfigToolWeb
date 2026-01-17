@@ -69,6 +69,8 @@ export interface Subscription {
   id: string;
   userId: string;
   plan: Plan;
+  pendingPlan: Plan | null;
+  pendingPlanEffectiveDate: string | null;
   status: SubscriptionStatus;
   trialEndsAt: string | null;
   currentPeriodStart: string;
