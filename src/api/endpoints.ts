@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest } from '../types';
+import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction } from '../types';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -85,6 +85,7 @@ export const billingApi = {
   createSubscription: (data: CreateSubscriptionRequest) => api.post<Subscription>('/api/billing/subscription', data),
   cancelSubscription: () => api.post('/api/billing/subscription/cancel'),
   resumeSubscription: () => api.post('/api/billing/subscription/resume'),
+  cancelPendingDowngrade: () => api.post<Subscription>('/api/billing/subscription/cancel-pending'),
   getInvoices: () => api.get<Invoice[]>('/api/billing/invoices'),
   getPaymentMethods: () => api.get<PaymentMethod[]>('/api/billing/payment-methods'),
   addPaymentMethod: (data: AddPaymentMethodRequest) => api.post<PaymentMethod>('/api/billing/payment-methods', data),
@@ -266,4 +267,23 @@ export const pluginAliasApi = {
   // Delete an alias
   delete: (serverId: string, aliasId: string) =>
     api.delete(`/api/servers/${serverId}/plugin-aliases/${aliasId}`),
+};
+
+// Audit Log API
+export const auditLogApi = {
+  // Get audit logs for a specific server
+  getServerLogs: (serverId: string, page = 0, size = 50) =>
+    api.get<PageResponse<AuditLog>>(`/api/audit-logs/servers/${serverId}`, { params: { page, size } }),
+
+  // Get all user audit logs (optionally filtered by actions)
+  getUserLogs: (page = 0, size = 50, actions?: AuditAction[]) =>
+    api.get<PageResponse<AuditLog>>(`/api/audit-logs`, { params: { page, size, actions } }),
+
+  // Get activity feed (recent logs)
+  getActivityFeed: (limit = 50) =>
+    api.get<AuditLog[]>(`/api/audit-logs/activity`, { params: { limit } }),
+
+  // Get activity statistics
+  getActivityStats: () =>
+    api.get<{ actionsLast24Hours: number }>(`/api/audit-logs/activity/stats`),
 };

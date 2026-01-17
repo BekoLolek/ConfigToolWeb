@@ -13,6 +13,7 @@ import RollbackModal from '../components/RollbackModal';
 import ServerSettings from '../components/ServerSettings';
 import Breadcrumb from '../components/Breadcrumb';
 import FileUpload from '../components/FileUpload';
+import ServerAuditLog from '../components/ServerAuditLog';
 import clsx from 'clsx';
 
 type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected';
@@ -39,6 +40,7 @@ export default function ServerView() {
   const [showSearch, setShowSearch] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showRollback, setShowRollback] = useState(false);
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   // Connection status state
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
@@ -259,6 +261,18 @@ export default function ServerView() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-xs font-mono uppercase tracking-wider hidden sm:inline">Rollback</span>
+          </button>
+
+          {/* Activity Log button */}
+          <button
+            onClick={() => setShowAuditLog(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-800 hover:border-violet-500/50 text-slate-500 dark:text-slate-400 hover:text-violet-500 dark:hover:text-violet-400 transition-all"
+            title="View activity log"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <span className="text-xs font-mono uppercase tracking-wider hidden sm:inline">Activity</span>
           </button>
 
           {/* Search button */}
@@ -528,6 +542,13 @@ export default function ServerView() {
           // Refresh file cache to show rolled back content
           clearFileCache();
         }}
+      />
+
+      {/* Audit Log Modal */}
+      <ServerAuditLog
+        serverId={serverId!}
+        isOpen={showAuditLog}
+        onClose={() => setShowAuditLog(false)}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import ServerView from './pages/ServerView';
 import Pricing from './pages/Pricing';
 import Billing from './pages/Billing';
+import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import ApiKeys from './pages/ApiKeys';
 import Webhooks from './pages/Webhooks';
@@ -26,6 +27,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+// Protected route without AppShell (for pages with custom layouts like Checkout)
+function ProtectedRouteNoShell({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -55,6 +63,7 @@ export default function App() {
         <Route path="/templates/:templateId" element={<ProtectedRoute><TemplateDetail /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+        <Route path="/checkout" element={<ProtectedRouteNoShell><Checkout /></ProtectedRouteNoShell>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />
         <Route path="/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />

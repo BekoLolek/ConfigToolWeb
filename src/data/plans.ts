@@ -83,8 +83,8 @@ export const PLANS: Record<Plan, PlanDetails> = {
 export function formatPrice(cents: number, yearly: boolean): string {
   if (cents === -1) return 'Custom';
   if (cents === 0) return 'Free';
-  const dollars = cents / 100;
-  return `$${dollars.toFixed(2)}`;
+  const euros = cents / 100;
+  return `€${euros.toFixed(2)}`;
 }
 
 export function formatLimit(value: number): string {

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useBillingStore } from '../stores/billingStore';
 import ThemeToggle from '../components/ThemeToggle';
 import { PLANS, Plan, PlanDetails, formatPrice, formatLimit, TRIAL_DAYS } from '../data/plans';
 
@@ -37,10 +38,20 @@ function HexDecoration({ className = '' }: { className?: string }) {
 
 export default function Pricing() {
   const { user, logout, refreshToken } = useAuthStore();
+  const { subscription, loadingSubscription, fetchSubscription } = useBillingStore();
   const [isYearly, setIsYearly] = useState(false);
-  const [currentPlan] = useState<Plan | null>(null); // TODO: Get from subscription
   const [hoveredPlan, setHoveredPlan] = useState<Plan | null>(null);
   const navigate = useNavigate();
+
+  // Get current plan from subscription
+  const currentPlan = subscription?.plan || null;
+
+  // Fetch subscription on mount if user is logged in
+  useEffect(() => {
+    if (user) {
+      fetchSubscription();
+    }
+  }, [user, fetchSubscription]);
 
   const handleLogout = async () => {
     if (refreshToken) {
@@ -52,21 +63,31 @@ export default function Pricing() {
 
   const handleSelectPlan = (plan: Plan) => {
     if (plan === currentPlan) return;
+
     if (plan === 'ENTERPRISE') {
       // Contact sales
       window.location.href = 'mailto:sales@configtool.dev?subject=Enterprise%20Plan%20Inquiry';
       return;
     }
-    // TODO: Navigate to checkout or call billing API
-    console.log('Selected plan:', plan);
+
+    if (!user) {
+      // Not logged in - redirect to login with plan info
+      navigate(`/login?redirect=/checkout&plan=${plan}&billing=${isYearly ? 'yearly' : 'monthly'}`);
+      return;
+    }
+
+    // Logged in - navigate to checkout with plan details
+    navigate(`/checkout?plan=${plan}&billing=${isYearly ? 'yearly' : 'monthly'}`);
   };
 
   const getButtonText = (plan: Plan): string => {
     if (plan === currentPlan) return 'Current Plan';
     if (plan === 'ENTERPRISE') return 'Contact Sales';
-    if (!currentPlan) return 'Start Free Trial';
-    const planOrder: Plan[] = ['PRO', 'TEAM', 'ENTERPRISE'];
-    const currentIndex = planOrder.indexOf(currentPlan);
+    if (!user) return 'Start Free Trial';
+    // If no subscription or FREE plan (which isn't in the Plan type but may come from backend)
+    if (!currentPlan || (currentPlan as string) === 'FREE') return 'Subscribe';
+    const planOrder = ['PRO', 'TEAM', 'ENTERPRISE'] as const;
+    const currentIndex = planOrder.indexOf(currentPlan as typeof planOrder[number]);
     const targetIndex = planOrder.indexOf(plan);
     return targetIndex > currentIndex ? 'Upgrade' : 'Downgrade';
   };
@@ -294,16 +315,26 @@ export default function Pricing() {
                     {/* CTA Button */}
                     <button
                       onClick={() => handleSelectPlan(key)}
-                      disabled={isCurrentPlan}
+                      disabled={isCurrentPlan || (!!user && loadingSubscription)}
                       className={`w-full py-3 rounded-lg font-display font-semibold text-sm uppercase tracking-wide transition-all ${
                         isCurrentPlan
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                           : isHighlighted
-                          ? 'bg-cyber-600 text-white hover:bg-cyber-500 shadow-glow-sm hover:shadow-glow'
-                          : 'bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600'
+                          ? 'bg-cyber-600 text-white hover:bg-cyber-500 shadow-glow-sm hover:shadow-glow disabled:opacity-50 disabled:cursor-wait'
+                          : 'bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-wait'
                       }`}
                     >
-                      {getButtonText(key)}
+                      {!!user && loadingSubscription ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Loading...
+                        </span>
+                      ) : (
+                        getButtonText(key)
+                      )}
                     </button>
                   </div>
 
@@ -443,15 +474,35 @@ export default function Pricing() {
 
             <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-lg px-12 py-10">
               <h3 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-3">
-                Ready to level up?
+                {user ? 'Ready to upgrade?' : 'Ready to level up?'}
               </h3>
               <p className="text-slate-500 dark:text-slate-400 mb-6">
-                Start your {TRIAL_DAYS}-day free trial with full Team features. No credit card required.
+                {user
+                  ? currentPlan === 'FREE' || !currentPlan
+                    ? 'Upgrade to a paid plan to unlock all features.'
+                    : 'Manage your subscription or upgrade to get more features.'
+                  : `Start your ${TRIAL_DAYS}-day free trial with full Team features. No credit card required.`
+                }
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/login" className="btn btn-primary px-8">
-                  Start Free Trial
-                </Link>
+                {user ? (
+                  currentPlan && currentPlan !== 'FREE' ? (
+                    <Link to="/billing" className="btn btn-primary px-8">
+                      Manage Subscription
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => handleSelectPlan('TEAM')}
+                      className="btn btn-primary px-8"
+                    >
+                      Subscribe to Team
+                    </button>
+                  )
+                ) : (
+                  <Link to="/login" className="btn btn-primary px-8">
+                    Start Free Trial
+                  </Link>
+                )}
                 <a
                   href="mailto:sales@configtool.dev"
                   className="btn btn-secondary px-8"

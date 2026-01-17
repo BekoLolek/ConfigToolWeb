@@ -1,11 +1,18 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import type { Subscription } from '../types';
+import { useBillingStore } from '../stores/billingStore';
 
-interface TrialBannerProps {
-  subscription: Subscription | null;
-}
+export default function TrialBanner() {
+  const { subscription, fetchSubscription } = useBillingStore();
 
-export default function TrialBanner({ subscription }: TrialBannerProps) {
+  // Fetch subscription on mount if not already loaded
+  useEffect(() => {
+    if (!subscription) {
+      fetchSubscription();
+    }
+  }, [subscription, fetchSubscription]);
+
+  // Don't show if no subscription or not trialing
   if (!subscription || !subscription.isTrialing) {
     return null;
   }
@@ -29,10 +36,10 @@ export default function TrialBanner({ subscription }: TrialBannerProps) {
 
   // Choose colors based on urgency
   const bannerClass = isCritical
-    ? 'bg-red-900/50 border-red-500'
+    ? 'bg-red-900/50 border-red-500/50'
     : isUrgent
-    ? 'bg-amber-900/50 border-amber-500'
-    : 'bg-cyber-900/50 border-cyber-500';
+    ? 'bg-amber-900/50 border-amber-500/50'
+    : 'bg-cyber-900/30 border-cyber-500/30';
 
   const textClass = isCritical
     ? 'text-red-300'
@@ -41,29 +48,46 @@ export default function TrialBanner({ subscription }: TrialBannerProps) {
     : 'text-cyber-300';
 
   const badgeClass = isCritical
-    ? 'bg-red-500/20 text-red-300'
+    ? 'bg-red-500/20 text-red-300 border-red-500/30'
     : isUrgent
-    ? 'bg-amber-500/20 text-amber-300'
-    : 'bg-cyber-500/20 text-cyber-300';
+    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+    : 'bg-cyber-500/20 text-cyber-300 border-cyber-500/30';
+
+  const buttonClass = isCritical
+    ? 'bg-red-600 hover:bg-red-500'
+    : isUrgent
+    ? 'bg-amber-600 hover:bg-amber-500'
+    : 'bg-cyber-600 hover:bg-cyber-500';
 
   return (
-    <div className={`px-4 py-2 ${bannerClass} border-b flex items-center justify-between gap-4`}>
+    <div className={`px-4 py-2.5 ${bannerClass} border-b flex items-center justify-between gap-4`}>
       <div className="flex items-center gap-3">
-        {/* Clock icon */}
-        <svg className={`w-5 h-5 ${textClass}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        {/* Clock icon with animation for urgent states */}
+        <div className={isCritical || isUrgent ? 'animate-pulse' : ''}>
+          <svg className={`w-5 h-5 ${textClass}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
 
         <span className={`text-sm font-medium ${textClass}`}>
-          Trial period: <span className={`px-2 py-0.5 rounded ${badgeClass} font-mono`}>{timeText}</span>
+          <span className="hidden sm:inline">Free trial: </span>
+          <span className={`px-2 py-0.5 rounded border ${badgeClass} font-mono text-xs`}>
+            {timeText}
+          </span>
         </span>
+
+        {isCritical && (
+          <span className="hidden md:inline text-xs text-red-400">
+            Subscribe now to avoid service interruption
+          </span>
+        )}
       </div>
 
       <Link
-        to="/settings/billing"
-        className="text-sm font-medium text-white bg-cyber-600 hover:bg-cyber-500 px-3 py-1 rounded transition-colors"
+        to="/pricing"
+        className={`text-sm font-display font-semibold uppercase tracking-wide text-white ${buttonClass} px-4 py-1.5 rounded transition-colors`}
       >
-        Subscribe Now
+        Subscribe
       </Link>
     </div>
   );

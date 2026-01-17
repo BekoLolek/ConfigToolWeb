@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.6.1",
     "axios": "^1.6.7",
     "clsx": "^2.1.0",
     "diff": "^8.0.3",
