@@ -411,3 +411,82 @@ export interface AdminWebhookFilters {
   active?: boolean;
   type?: WebhookType;
 }
+
+// ============================================================================
+// P3: Admin Invite Code Management Types
+// ============================================================================
+
+export interface AdminInviteCode {
+  id: string;
+  code: string;
+  serverId: string;
+  serverName: string;
+  ownerId: string;
+  ownerEmail: string;
+  used: boolean;
+  usedById: string | null;
+  usedByEmail: string | null;
+  usedAt: string | null;
+  expiresAt: string;
+  expired: boolean;
+  createdAt: string;
+}
+
+export interface AdminInviteCodeDetail extends AdminInviteCode {
+  // Same fields as AdminInviteCode for now, can be extended
+}
+
+export interface AdminInviteCodeStats {
+  totalCodes: number;
+  activeCodes: number;
+  usedCodes: number;
+  expiredCodes: number;
+}
+
+export interface AdminInviteCodeFilters {
+  serverId?: string;
+  used?: boolean;
+  expired?: boolean;
+}
+
+// ============================================================================
+// P3: Admin Scheduled Backup Management Types
+// ============================================================================
+
+export type BackupStatus = 'SUCCESS' | 'FAILED' | 'NEVER_RUN';
+
+export interface AdminScheduledBackup {
+  id: number;
+  name: string;
+  serverId: string;
+  serverName: string;
+  ownerId: string;
+  ownerEmail: string;
+  cronExpression: string;
+  enabled: boolean;
+  lastStatus: BackupStatus;
+  lastRunAt: string | null;
+  lastError: string | null;
+  nextRunAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminScheduledBackupDetail extends AdminScheduledBackup {
+  retentionDays: number;
+  includedPaths: string | null;
+  excludedPaths: string | null;
+  updatedAt: string;
+}
+
+export interface AdminScheduledBackupStats {
+  totalBackups: number;
+  enabledBackups: number;
+  failedBackups: number;
+}
+
+export interface AdminScheduledBackupFilters {
+  ownerId?: string;
+  serverId?: string;
+  enabled?: boolean;
+  status?: BackupStatus;
+}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { adminDashboardApi, adminUserApi, adminAuditLogApi, adminTemplateApi, adminServerApi, adminBillingApi, adminSecurityApi, adminCollaboratorApi, adminWebhookApi } from '../api/endpoints';
+import { adminDashboardApi, adminUserApi, adminAuditLogApi, adminTemplateApi, adminServerApi, adminBillingApi, adminSecurityApi, adminCollaboratorApi, adminWebhookApi, adminInviteCodeApi, adminScheduledBackupApi } from '../api/endpoints';
 import type {
   AdminDashboardStats,
   AdminRevenue,
@@ -38,6 +38,16 @@ import type {
   AdminWebhookStats,
   AdminWebhookFilters,
   WebhookType,
+  // P3: Invite Code Types
+  AdminInviteCode,
+  AdminInviteCodeDetail,
+  AdminInviteCodeStats,
+  AdminInviteCodeFilters,
+  // P3: Scheduled Backup Types
+  AdminScheduledBackup,
+  AdminScheduledBackupDetail,
+  AdminScheduledBackupStats,
+  AdminScheduledBackupFilters,
 } from '../types/admin';
 import type { Plan, SubscriptionStatus } from '../types';
 
@@ -134,6 +144,28 @@ interface AdminState {
   loadingWebhooks: boolean;
   loadingWebhookDetail: boolean;
 
+  // P3: Invite Codes
+  inviteCodes: AdminInviteCode[];
+  inviteCodesTotal: number;
+  inviteCodesPage: number;
+  inviteCodesPageSize: number;
+  inviteCodeFilters: AdminInviteCodeFilters;
+  selectedInviteCode: AdminInviteCodeDetail | null;
+  inviteCodeStats: AdminInviteCodeStats | null;
+  loadingInviteCodes: boolean;
+  loadingInviteCodeDetail: boolean;
+
+  // P3: Scheduled Backups
+  scheduledBackups: AdminScheduledBackup[];
+  scheduledBackupsTotal: number;
+  scheduledBackupsPage: number;
+  scheduledBackupsPageSize: number;
+  scheduledBackupFilters: AdminScheduledBackupFilters;
+  selectedScheduledBackup: AdminScheduledBackupDetail | null;
+  scheduledBackupStats: AdminScheduledBackupStats | null;
+  loadingScheduledBackups: boolean;
+  loadingScheduledBackupDetail: boolean;
+
   // Error state
   error: string | null;
 
@@ -209,6 +241,23 @@ interface AdminState {
   toggleWebhook: (webhookId: number) => Promise<void>;
   deleteWebhook: (webhookId: number) => Promise<void>;
   clearSelectedWebhook: () => void;
+
+  // P3: Invite Code actions
+  fetchInviteCodes: (page?: number, size?: number, filters?: AdminInviteCodeFilters) => Promise<void>;
+  fetchInviteCodeDetail: (inviteCodeId: string) => Promise<void>;
+  fetchInviteCodeStats: () => Promise<void>;
+  setInviteCodeFilters: (filters: AdminInviteCodeFilters) => void;
+  deleteInviteCode: (inviteCodeId: string) => Promise<void>;
+  clearSelectedInviteCode: () => void;
+
+  // P3: Scheduled Backup actions
+  fetchScheduledBackups: (page?: number, size?: number, filters?: AdminScheduledBackupFilters) => Promise<void>;
+  fetchScheduledBackupDetail: (backupId: number) => Promise<void>;
+  fetchScheduledBackupStats: () => Promise<void>;
+  setScheduledBackupFilters: (filters: AdminScheduledBackupFilters) => void;
+  toggleScheduledBackup: (backupId: number) => Promise<void>;
+  deleteScheduledBackup: (backupId: number) => Promise<void>;
+  clearSelectedScheduledBackup: () => void;
 
   // General
   clearError: () => void;
@@ -307,6 +356,28 @@ const initialState = {
   webhookStats: null as AdminWebhookStats | null,
   loadingWebhooks: false,
   loadingWebhookDetail: false,
+
+  // P3: Invite Codes
+  inviteCodes: [] as AdminInviteCode[],
+  inviteCodesTotal: 0,
+  inviteCodesPage: 0,
+  inviteCodesPageSize: 20,
+  inviteCodeFilters: {} as AdminInviteCodeFilters,
+  selectedInviteCode: null as AdminInviteCodeDetail | null,
+  inviteCodeStats: null as AdminInviteCodeStats | null,
+  loadingInviteCodes: false,
+  loadingInviteCodeDetail: false,
+
+  // P3: Scheduled Backups
+  scheduledBackups: [] as AdminScheduledBackup[],
+  scheduledBackupsTotal: 0,
+  scheduledBackupsPage: 0,
+  scheduledBackupsPageSize: 20,
+  scheduledBackupFilters: {} as AdminScheduledBackupFilters,
+  selectedScheduledBackup: null as AdminScheduledBackupDetail | null,
+  scheduledBackupStats: null as AdminScheduledBackupStats | null,
+  loadingScheduledBackups: false,
+  loadingScheduledBackupDetail: false,
 
   // Error
   error: null,
@@ -1031,6 +1102,167 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   clearSelectedWebhook: () => set({ selectedWebhook: null }),
+
+  // ============================================================================
+  // P3: Invite Code Management Actions
+  // ============================================================================
+  fetchInviteCodes: async (page = 0, size = 20, filters?: AdminInviteCodeFilters) => {
+    set({ loadingInviteCodes: true, error: null });
+    const currentFilters = filters || get().inviteCodeFilters;
+    try {
+      const { data } = await adminInviteCodeApi.list(page, size, currentFilters);
+      set({
+        inviteCodes: data.content,
+        inviteCodesTotal: data.totalElements,
+        inviteCodesPage: data.number,
+        inviteCodesPageSize: data.size,
+        inviteCodeFilters: currentFilters,
+        loadingInviteCodes: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingInviteCodes: false,
+        error: err.response?.data?.message || 'Failed to fetch invite codes',
+      });
+    }
+  },
+
+  fetchInviteCodeDetail: async (inviteCodeId: string) => {
+    set({ loadingInviteCodeDetail: true, error: null });
+    try {
+      const { data } = await adminInviteCodeApi.get(inviteCodeId);
+      set({ selectedInviteCode: data, loadingInviteCodeDetail: false });
+    } catch (err: any) {
+      set({
+        loadingInviteCodeDetail: false,
+        error: err.response?.data?.message || 'Failed to fetch invite code details',
+      });
+    }
+  },
+
+  fetchInviteCodeStats: async () => {
+    set({ error: null });
+    try {
+      const { data } = await adminInviteCodeApi.getStats();
+      set({ inviteCodeStats: data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch invite code stats' });
+    }
+  },
+
+  setInviteCodeFilters: (filters: AdminInviteCodeFilters) => {
+    set({ inviteCodeFilters: filters });
+  },
+
+  deleteInviteCode: async (inviteCodeId: string) => {
+    set({ error: null });
+    try {
+      await adminInviteCodeApi.delete(inviteCodeId);
+      // Refresh invite codes list
+      const { inviteCodesPage, inviteCodesPageSize, inviteCodeFilters } = get();
+      await get().fetchInviteCodes(inviteCodesPage, inviteCodesPageSize, inviteCodeFilters);
+      // Clear selected invite code if it was deleted
+      if (get().selectedInviteCode?.id === inviteCodeId) {
+        set({ selectedInviteCode: null });
+      }
+      // Refresh stats
+      await get().fetchInviteCodeStats();
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to delete invite code' });
+      throw err;
+    }
+  },
+
+  clearSelectedInviteCode: () => set({ selectedInviteCode: null }),
+
+  // ============================================================================
+  // P3: Scheduled Backup Management Actions
+  // ============================================================================
+  fetchScheduledBackups: async (page = 0, size = 20, filters?: AdminScheduledBackupFilters) => {
+    set({ loadingScheduledBackups: true, error: null });
+    const currentFilters = filters || get().scheduledBackupFilters;
+    try {
+      const { data } = await adminScheduledBackupApi.list(page, size, currentFilters);
+      set({
+        scheduledBackups: data.content,
+        scheduledBackupsTotal: data.totalElements,
+        scheduledBackupsPage: data.number,
+        scheduledBackupsPageSize: data.size,
+        scheduledBackupFilters: currentFilters,
+        loadingScheduledBackups: false,
+      });
+    } catch (err: any) {
+      set({
+        loadingScheduledBackups: false,
+        error: err.response?.data?.message || 'Failed to fetch scheduled backups',
+      });
+    }
+  },
+
+  fetchScheduledBackupDetail: async (backupId: number) => {
+    set({ loadingScheduledBackupDetail: true, error: null });
+    try {
+      const { data } = await adminScheduledBackupApi.get(backupId);
+      set({ selectedScheduledBackup: data, loadingScheduledBackupDetail: false });
+    } catch (err: any) {
+      set({
+        loadingScheduledBackupDetail: false,
+        error: err.response?.data?.message || 'Failed to fetch scheduled backup details',
+      });
+    }
+  },
+
+  fetchScheduledBackupStats: async () => {
+    set({ error: null });
+    try {
+      const { data } = await adminScheduledBackupApi.getStats();
+      set({ scheduledBackupStats: data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch scheduled backup stats' });
+    }
+  },
+
+  setScheduledBackupFilters: (filters: AdminScheduledBackupFilters) => {
+    set({ scheduledBackupFilters: filters });
+  },
+
+  toggleScheduledBackup: async (backupId: number) => {
+    set({ error: null });
+    try {
+      await adminScheduledBackupApi.toggle(backupId);
+      // Refresh scheduled backups list
+      const { scheduledBackupsPage, scheduledBackupsPageSize, scheduledBackupFilters } = get();
+      await get().fetchScheduledBackups(scheduledBackupsPage, scheduledBackupsPageSize, scheduledBackupFilters);
+      // If we have a selected scheduled backup, refresh that too
+      if (get().selectedScheduledBackup?.id === backupId) {
+        await get().fetchScheduledBackupDetail(backupId);
+      }
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to toggle scheduled backup' });
+      throw err;
+    }
+  },
+
+  deleteScheduledBackup: async (backupId: number) => {
+    set({ error: null });
+    try {
+      await adminScheduledBackupApi.delete(backupId);
+      // Refresh scheduled backups list
+      const { scheduledBackupsPage, scheduledBackupsPageSize, scheduledBackupFilters } = get();
+      await get().fetchScheduledBackups(scheduledBackupsPage, scheduledBackupsPageSize, scheduledBackupFilters);
+      // Clear selected scheduled backup if it was deleted
+      if (get().selectedScheduledBackup?.id === backupId) {
+        set({ selectedScheduledBackup: null });
+      }
+      // Refresh stats
+      await get().fetchScheduledBackupStats();
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to delete scheduled backup' });
+      throw err;
+    }
+  },
+
+  clearSelectedScheduledBackup: () => set({ selectedScheduledBackup: null }),
 
   // General
   clearError: () => set({ error: null }),

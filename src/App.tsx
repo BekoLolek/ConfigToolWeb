@@ -39,6 +39,11 @@ import AdminCollaborators from './pages/admin/AdminCollaborators';
 import AdminCollaboratorDetail from './pages/admin/AdminCollaboratorDetail';
 import AdminWebhooks from './pages/admin/AdminWebhooks';
 import AdminWebhookDetail from './pages/admin/AdminWebhookDetail';
+// P3 Admin pages
+import AdminInviteCodes from './pages/admin/AdminInviteCodes';
+import AdminInviteCodeDetail from './pages/admin/AdminInviteCodeDetail';
+import AdminScheduledBackups from './pages/admin/AdminScheduledBackups';
+import AdminScheduledBackupDetail from './pages/admin/AdminScheduledBackupDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -115,6 +120,11 @@ export default function App() {
         <Route path="/admin/collaborators/:collaboratorId" element={<AdminRoute><AdminCollaboratorDetail /></AdminRoute>} />
         <Route path="/admin/webhooks" element={<AdminRoute><AdminWebhooks /></AdminRoute>} />
         <Route path="/admin/webhooks/:webhookId" element={<AdminRoute><AdminWebhookDetail /></AdminRoute>} />
+        {/* P3 Admin routes */}
+        <Route path="/admin/invite-codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
+        <Route path="/admin/invite-codes/:inviteCodeId" element={<AdminRoute><AdminInviteCodeDetail /></AdminRoute>} />
+        <Route path="/admin/scheduled-backups" element={<AdminRoute><AdminScheduledBackups /></AdminRoute>} />
+        <Route path="/admin/scheduled-backups/:backupId" element={<AdminRoute><AdminScheduledBackupDetail /></AdminRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

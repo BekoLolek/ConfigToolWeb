@@ -1,6 +1,6 @@
 import { api } from './client';
 import type { AuthResponse, ServerListItem, Server, FileListResponse, FileContent, Version, VersionDetail, SearchResult, UpdateServerRequest, FileChange, Subscription, Invoice, PaymentMethod, Usage, ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, Webhook, CreateWebhookRequest, ScheduledBackup, CreateScheduledBackupRequest, GitConfig, CreateGitConfigRequest, Template, TemplateCategory, TemplateRating, TemplateVariable, PageResponse, CreateTemplateRequest, CreateRatingRequest, CreateVariableRequest, ServerCollaborator, InviteCode, InviteCodeValidation, FileRestriction, CreateFileRestrictionRequest, PathPermissions, PluginAlias, CreatePluginAliasRequest, AuditLog, AuditAction, Plan } from '../types';
-import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters, AdminCollaborator, AdminCollaboratorDetail, AdminCollaboratorStats, AdminCollaboratorFilters, AdminWebhook, AdminWebhookDetail, AdminWebhookStats, AdminWebhookFilters } from '../types/admin';
+import type { AdminDashboardStats, AdminRevenue, AdminUser, AdminUserDetail, AdminAuditLog, AdminAuditLogFilters, AdminTemplate, AdminPageResponse, TemplateReviewStatus, SuspendUserRequest, OverridePlanRequest, RejectTemplateRequest, AdminServer, AdminServerDetail, AdminServerStats, AdminServerFilters, AdminSubscription, AdminSubscriptionDetail, AdminBillingStats, AdminSubscriptionFilters, ExtendTrialRequest, CancelSubscriptionRequest, AdminApiKey, AdminApiKeyDetail, AdminSecurityStats, AdminApiKeyFilters, AdminLoginHistory, AdminLoginHistoryFilters, AdminCollaborator, AdminCollaboratorDetail, AdminCollaboratorStats, AdminCollaboratorFilters, AdminWebhook, AdminWebhookDetail, AdminWebhookStats, AdminWebhookFilters, AdminInviteCode, AdminInviteCodeDetail, AdminInviteCodeStats, AdminInviteCodeFilters, AdminScheduledBackup, AdminScheduledBackupDetail, AdminScheduledBackupStats, AdminScheduledBackupFilters } from '../types/admin';
 
 // Type definitions for API requests
 export interface CreateServerRequest {
@@ -481,4 +481,45 @@ export const adminWebhookApi = {
 
   delete: (webhookId: number) =>
     api.delete(`/api/admin/webhooks/${webhookId}`),
+};
+
+// ============================================================================
+// P3: Admin Invite Code Management API
+// ============================================================================
+export const adminInviteCodeApi = {
+  list: (page = 0, size = 20, filters?: AdminInviteCodeFilters) =>
+    api.get<AdminPageResponse<AdminInviteCode>>('/api/admin/invite-codes', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (inviteCodeId: string) =>
+    api.get<AdminInviteCodeDetail>(`/api/admin/invite-codes/${inviteCodeId}`),
+
+  getStats: () =>
+    api.get<AdminInviteCodeStats>('/api/admin/invite-codes/stats'),
+
+  delete: (inviteCodeId: string) =>
+    api.delete(`/api/admin/invite-codes/${inviteCodeId}`),
+};
+
+// ============================================================================
+// P3: Admin Scheduled Backup Management API
+// ============================================================================
+export const adminScheduledBackupApi = {
+  list: (page = 0, size = 20, filters?: AdminScheduledBackupFilters) =>
+    api.get<AdminPageResponse<AdminScheduledBackup>>('/api/admin/scheduled-backups', {
+      params: { page, size, ...filters },
+    }),
+
+  get: (backupId: number) =>
+    api.get<AdminScheduledBackupDetail>(`/api/admin/scheduled-backups/${backupId}`),
+
+  getStats: () =>
+    api.get<AdminScheduledBackupStats>('/api/admin/scheduled-backups/stats'),
+
+  toggle: (backupId: number) =>
+    api.post(`/api/admin/scheduled-backups/${backupId}/toggle`),
+
+  delete: (backupId: number) =>
+    api.delete(`/api/admin/scheduled-backups/${backupId}`),
 };
